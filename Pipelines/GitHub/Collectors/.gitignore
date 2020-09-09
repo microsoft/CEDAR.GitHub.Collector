@@ -1,0 +1,21 @@
+################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+/__CompilerTrace.log
+*.user
+*.suo
+[Oo]bj/
+[Bb]in/
+.vs/*
+!.vs/snippets/
+packages/
+*.log
+.tools/
+# vsmsbuild would generate dirs.sln, projhash* and slnhash*
+*.projhash*
+*.slnhash*
+/.vscode/settings.json
+/.vscode/spellright.dict
+.vs
+*local.settings.json
+* - Zip Deploy.pubxml
