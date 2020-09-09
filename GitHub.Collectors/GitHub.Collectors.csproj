@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AssemblyName>Microsoft.CloudMine.GitHub.Collectors</AssemblyName>
+    <RootNamespace>Microsoft.CloudMine.GitHub.Collectors</RootNamespace>
+    <InformationalVersion>$(Build_BuildNumber)</InformationalVersion>
+    <SourceRevisionId>$(Build_SourceVersion)</SourceRevisionId>
+    <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+</Project>

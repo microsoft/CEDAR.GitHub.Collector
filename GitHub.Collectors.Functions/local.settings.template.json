@@ -1,0 +1,20 @@
+{
+
+  // Important note: This file does NOT contain all settings needed to run itHub collectors. In time, it will have less and less of the settings, containing only bare minimum and secret values.
+  // The majority of the settings are accessed through the Settings.json blob in github-settings container of the collector storage account.
+  // An example of such settings can be found under this project: Settings\PPE\Settings.json.
+
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "<Instrumentation key for your AI instance>",
+
+    "PersonalAccessToken": "<PAT of the collection identity>",
+
+    "EventCountLimit": 100,
+
+    "AdlsIngestionApplicationId": "<ID of application with ADLS write permissions>",
+    "AdlsIngestionApplicationSecret": "<Secret for application with ADLS write permissions>"
+  }
+}
