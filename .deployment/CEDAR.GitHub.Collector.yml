@@ -1,0 +1,57 @@
+# This pipeline validates changes in CEDAR.GitHub.Collector.
+
+name: $(Year:yyyy).$(Month).$(DayOfMonth).$(Rev:r)
+
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet'
+  inputs:
+    command: restore
+    projects: 'GitHub.Collectors.sln'
+    feedsToUse: config
+    nugetConfigPath: 'NuGet.config'
+    externalFeedCredentials: 'Domino Nuget (CloudBuild VSO account), MerlinBot MSblox'
+
+- task: UseDotNet@2
+  displayName: 'Use .Net Core sdk 3.0'
+  inputs:
+    version: 3.1.200
+    installationPath: '$(Agent.ToolsDirectory)\dotnet'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build CloudMine GitHub collectors'
+  inputs:
+    projects: 'GitHub.Collectors.sln'
+    arguments: '-c Release --no-restore'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Test CloudMine GitHub collectors'
+  inputs:
+    command: test
+    projects: 'GitHub.Collectors.sln'
+    arguments: '--configuration $(buildConfiguration) --no-restore --collect "Code coverage"'
+
+- task: ArchiveFiles@2
+  displayName: 'Archive GitHub collectors'
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)\GitHub.Collectors.Functions\bin\Release\netcoreapp3.1'
+    includeRootFolder: false
+    archiveFile: '$(Build.ArtifactStagingDirectory)\GitHub.Collectors.Functions$(Build.BuildId).zip'
+
+- task: CopyFiles@2
+  displayName: 'Copy Build output'
+  inputs:
+    SourceFolder: '$(Build.StagingDirectory)'
+    TargetFolder: '$(build.ArtifactStagingDirectory)\output'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\output'
