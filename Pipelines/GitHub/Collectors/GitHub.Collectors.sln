@@ -9,8 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Tests", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BCABE3D1-BA81-4C42-95FD-9FDAA3D244A5}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\.editorconfig = ..\..\.editorconfig
-		..\..\Collectors\NuGet.Config = ..\..\Collectors\NuGet.Config
+		NuGet.config = NuGet.config
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Functions", "GitHub.Collectors.Functions\GitHub.Collectors.Functions.csproj", "{577CF5A9-3961-4C14-BE38-708B2E9F3B08}"
