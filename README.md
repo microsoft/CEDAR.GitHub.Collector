@@ -1,3 +1,12 @@
+[![Build Status](https://dev.azure.com/mseng/Domino/_apis/build/status/CloudMine/Pipelines/GitHub/Collectors/CEDAR.GitHub.Collector-PR?branchName=main)](https://dev.azure.com/mseng/Domino/_build/latest?definitionId=10573&branchName=main)
+
+# Introduction
+
+CEDAR.GitHub.Collector is a set of Azure Functions to collect engineering metadata from GitHub. It consists of four collectors:
+1. Main: the main collector processes the data coming directly from the GitHub Webhooks
+2. Delta: the delta collector makes requests against the [EventsTimeline API](https://developer.github.com/v3/activity/events/#list-repository-events) to ensure that data is not missed through the main collector
+3. Onboarding: the onboarding collector collects current state of a given GitHub repository / organization
+4. Traffic: the traffic collects [Traffic API](https://docs.github.com/en/rest/reference/repos#traffic) data
 
 # Contributing
 
