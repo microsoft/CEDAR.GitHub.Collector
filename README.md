@@ -33,24 +33,24 @@ The Azure Functions Tools extension can be installed during the VS installation 
 Create a fork of this repository and open the GitHub.Collectors.sln solution file in Visual Studio. 
 
 
-## 3. Create local.settings.json
-Create a local.settings.json file in the under the GitHub.Collectors.Functions project.
+## 3. Create `local.settings.json`
+Create a `local.settings.json` file in the under the GitHub.Collectors.Functions project.
 
-Find the local.settings.template.json file and copy its contents into your new local.settings.json file.
+Find the local.settings.template.json file and copy its contents into your new `local.settings.json` file.
 
-Add your github account identity under the key “Identity”.
+Add your GitHub account identity under the key “Identity”.
 
-Add a Personal Access Token associated with your github account under the key “PersonalAccessToken”.
+Add a Personal Access Token associated with your GitHub account under the key “PersonalAccessToken”.
 
 ## 4. Setup Azure Storage 
 In [Azure](https://portal.azure.com/) create an Azure storage account where the data you will be collecting from GitHub will be saved.
 
-Paste the Connection String of this new storage account into your local.settings.json file under the key “AzureWebJobsStorage”.
+Paste the Connection String of this new storage account into your `local.settings.json` file under the key “AzureWebJobsStorage”.
 
 ## 5. Setup Application Insights
 In [Azure](https://portal.azure.com/) create an Application Insights resource where telemetry from your function executions will be sent.
 
-Add the Instrumentation key from this account into your local.settings.json file under the key “APPINSIGHTS_INSTRUMENTATIONKEY”.
+Add the Instrumentation key from this account into your `local.settings.json` file under the key “APPINSIGHTS_INSTRUMENTATIONKEY”.
 
 ## 6. Run the Azure Functions Locally with Visual Studio Code
 
@@ -85,7 +85,7 @@ dependencies
 ```
  
 ## 7. Make and debug changes
-Create and chekout feature branches from your fork on your local machine and make your contributions to the code base.
+Create and checkout feature branches from your fork on your local machine and make your contributions to the code base.
 
 Test your and debug your changes. Running the GitHub.Collectors.Functions in the Debug Configuration will allow you to use the Visual Studio debugging tools while your functions run. (Breakpoints, Variable Tracking, etc...)
 
