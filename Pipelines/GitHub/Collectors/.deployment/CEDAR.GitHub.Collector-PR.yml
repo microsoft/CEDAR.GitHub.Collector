@@ -20,7 +20,6 @@ steps:
     projects: 'GitHub.Collectors.sln'
     feedsToUse: config
     nugetConfigPath: 'NuGet.config'
-    externalFeedCredentials: 'Domino Nuget (CloudBuild VSO account), MerlinBot MSblox'
 
 - task: UseDotNet@2
   displayName: 'Use .Net Core sdk 3.0'
