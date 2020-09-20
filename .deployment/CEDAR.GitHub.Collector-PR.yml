@@ -13,6 +13,17 @@ steps:
 - checkout: self
   submodules: true
 
+- powershell: |
+   cd $(System.DefaultWorkingDirectory)\CEDAR.Core.Collector
+   git fetch origin main
+   $localSha = git rev-parse HEAD
+   $remoteSha = git rev-parse origin/main
+   cd ..
+   if ($localSha -ne $remoteSha)
+   {
+     throw "Failing build since local SHA '$($localSha)' for CEDAR.Core.Collector does not match the origin/main SHA '$($remoteSha)'. Please update submodule as soon as possible."
+   }
+
 - task: DotNetCoreCLI@2
   displayName: 'Restore NuGet'
   inputs:
