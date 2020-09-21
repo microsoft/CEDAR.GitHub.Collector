@@ -23,6 +23,7 @@ steps:
    {
      throw "Failing build since local SHA '$($localSha)' for CEDAR.Core.Collector does not match the origin/main SHA '$($remoteSha)'. Please update submodule as soon as possible."
    }
+  displayName: Validate consumption of latest CEDAR.Core.Collector
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore NuGet'
