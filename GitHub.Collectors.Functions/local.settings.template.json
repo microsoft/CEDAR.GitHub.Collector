@@ -10,6 +10,9 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "APPINSIGHTS_INSTRUMENTATIONKEY": "<Instrumentation key for your AI instance>",
 
+    // Disable timer-triggered functions for local debugging. The functions can be selectively enabled when running locally.
+    "AzureWebJobs.TrafficTimer.Disabled": "true",
+
     "PersonalAccessToken": "<PAT of the collection identity>",
 
     "EventCountLimit": 100,
