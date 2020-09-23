@@ -422,7 +422,22 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as traffic collector trigger.
         /// </summary>
         [FunctionName("TrafficTimer")]
-        public async Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext)
+        public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext)
+        {
+            return ExecuteTrafficCollector(executionContext);
+        }
+
+        /// <summary>
+        /// Queue triggered Azure function to queue the list of repositories for collecting the traffic endpoints:
+        /// https://developer.github.com/v3/repos/traffic/
+        /// Also known as traffic collector trigger.
+        [FunctionName("TrafficTimer")]
+        public Task TrafficCollector([QueueTrigger("trafficcollector")] ExecutionContext executionContext)
+        {
+            return ExecuteTrafficCollector(executionContext);
+        }
+
+        private async Task ExecuteTrafficCollector(ExecutionContext executionContext)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
