@@ -431,8 +431,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Queue triggered Azure function to queue the list of repositories for collecting the traffic endpoints:
         /// https://developer.github.com/v3/repos/traffic/
         /// Also known as traffic collector trigger.
-        [FunctionName("TrafficTimer")]
-        public Task TrafficCollector([QueueTrigger("trafficcollector")] ExecutionContext executionContext)
+        [FunctionName("TrafficCollector")]
+        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext)
         {
             return ExecuteTrafficCollector(executionContext);
         }
