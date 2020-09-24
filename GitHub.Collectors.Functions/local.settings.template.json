@@ -2,7 +2,7 @@
 
   // Important note: This file does NOT contain all settings needed to run itHub collectors. In time, it will have less and less of the settings, containing only bare minimum and secret values.
   // The majority of the settings are accessed through the Settings.json blob in github-settings container of the collector storage account.
-  // An example of such settings can be found under this project: Settings\PPE\Settings.json.
+  // An example of such settings can be found under this project: Settings.template.json
 
   "IsEncrypted": false,
   "Values": {
@@ -12,6 +12,8 @@
 
     // Disable timer-triggered functions for local debugging. The functions can be selectively enabled when running locally.
     "AzureWebJobs.TrafficTimer.Disabled": "true",
+
+    "SettingsPath":  "<file name to look under github-settings container to load the settings from Azure Blob. If not specified, defaults to 'Settings.json'.>",
 
     "PersonalAccessToken": "<PAT of the collection identity>",
 
