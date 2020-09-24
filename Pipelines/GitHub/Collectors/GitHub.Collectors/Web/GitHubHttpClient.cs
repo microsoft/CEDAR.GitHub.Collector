@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
+using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
@@ -19,12 +20,13 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.CloudMine.GitHub.Collectors.Web
 {
     // ToDo: kivancm: further abstract the common parts of AzureDevOpsHttpClient and GitHubHttpClient into the Core library.
-    public class GitHubHttpClient
+    public class GitHubHttpClient : IWebRequestStatsTracker
     {
         private readonly IHttpClient httpClient;
         private readonly IRateLimiter rateLimiter;
         private readonly ICache<ConditionalRequestTableEntity> requestCache;
         private readonly ITelemetryClient telemetryClient;
+
 
         public static ProductInfoHeaderValue GitHubProductInfoHeaderValue = new ProductInfoHeaderValue("CloudMineGitHubCollector", "1.0.0");
 
@@ -36,12 +38,20 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             RetryRules.RateLimiterAbuseRetryRule,
         };
 
+        public int SuccessfulRequestCount => this.successfulRequestCount;
+        private volatile int successfulRequestCount;
+        public int FailedRequestCount => this.failedRequestCount;
+        private volatile int failedRequestCount;
+
         public GitHubHttpClient(IHttpClient httpClient, IRateLimiter rateLimiter, ICache<ConditionalRequestTableEntity> requestCache, ITelemetryClient telemetryClient)
         {
             this.httpClient = httpClient;
             this.rateLimiter = rateLimiter;
             this.requestCache = requestCache;
             this.telemetryClient = telemetryClient;
+
+            this.successfulRequestCount = 0;
+            this.failedRequestCount = 0;
         }
 
         public async Task<HttpResponseMessage> GetConditionalViaETagAsync(string requestUrl, string recordType, IAuthentication authentication, List<HttpResponseSignature> whitelistedResponses)
@@ -101,6 +111,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             }
 
             await this.ThrowOnFatalResponseAsync(response, requestUrl, attemptIndex, authentication.Identity, whitelistedResponses).ConfigureAwait(false);
+            this.successfulRequestCount++;
             return response;
         }
 
@@ -207,6 +218,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 { "Fatal", true.ToString() },
             };
             this.telemetryClient.TrackException(fatalException, "Web request failed.", properties);
+            this.failedRequestCount++;
             throw fatalException;
         }
 
