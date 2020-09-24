@@ -20,10 +20,16 @@ namespace Microsoft.CloudMine.AzureDevOps.Collectors.Functions
             // Write startupcode here.
             builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
             builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
+            
             string settings = null;
+            string settingsPath = Environment.GetEnvironmentVariable("SettingsPath");
+            if (string.IsNullOrWhiteSpace(settingsPath))
+            {
+                settingsPath = "Settings.json";
+            }
             try
             {
-                settings = AzureHelpers.GetBlobContentAsync("github-settings", "Settings.json").ConfigureAwait(false).GetAwaiter().GetResult();
+                settings = AzureHelpers.GetBlobContentAsync("github-settings", settingsPath).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
             { 
