@@ -408,7 +408,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                         }
                     }
 
-                    statsTracker = new StatsTracker(telemetryClient, httpClient, StatsTrackerRefreshFrequency);
+                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
 
                     OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingQueue, telemetryClient, this.apiDomain);
                     await processor.ProcessAsync(onboardingInput).ConfigureAwait(false);
