@@ -4,6 +4,7 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.CloudMine.Core.Collectors.Context;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +14,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
 {
     public class GitHubApplicationInsightsTelemetryClient : ApplicationInsightsTelemetryClient
     {
-        public GitHubApplicationInsightsTelemetryClient(TelemetryClient telemetryClient, FunctionContext context)
-            : base(telemetryClient, context)
+        public GitHubApplicationInsightsTelemetryClient(TelemetryClient telemetryClient, FunctionContext context, ILogger logger = null)
+            : base(telemetryClient, context, logger)
         {
         }
 
