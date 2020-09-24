@@ -23,6 +23,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Processor;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -38,6 +39,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
     public class GitHubFunctions
     {
+        private readonly static TimeSpan StatsTrackerRefreshFrequency = TimeSpan.FromSeconds(10);
+
         public readonly string apiDomain;
         private readonly TelemetryClient telemetryClient;
         private readonly IHttpClient httpClient;
@@ -344,7 +347,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as the onboarding collector.
         /// </summary>
         [FunctionName("Onboard")]
-        public async Task Onboard([QueueTrigger("onboarding")] string queueItem, ExecutionContext executionContext)
+        public async Task Onboard([QueueTrigger("onboarding")] string queueItem, ExecutionContext executionContext, ILogger logger)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -366,9 +369,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 InvocationId = executionContext.InvocationId.ToString(),
             };
 
+            StatsTracker statsTracker = null;
             string outputPaths = string.Empty;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
@@ -393,10 +397,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
+                    IRecordStatsTracker recordStatsTracker = null;
+
                     foreach (IRecordWriter recordWriter in recordWriters)
                     {
                         recordWriter.SetOutputPathPrefix($"{repositoryDetails.OrganizationId}/{repositoryDetails.RepositoryId}");
+                        if (recordStatsTracker == null)
+                        {
+                            recordStatsTracker = recordWriter;
+                        }
                     }
+
+                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
+
                     OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingQueue, telemetryClient, this.apiDomain);
                     await processor.ProcessAsync(onboardingInput).ConfigureAwait(false);
                 }
@@ -413,6 +426,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             finally
             {
                 SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
+                statsTracker?.Stop();
             }
         }
 
@@ -422,9 +436,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as traffic collector trigger.
         /// </summary>
         [FunctionName("TrafficTimer")]
-        public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext)
+        public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            return ExecuteTrafficCollector(executionContext);
+            return ExecuteTrafficCollector(executionContext, logger);
         }
 
         /// <summary>
@@ -432,12 +446,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// https://developer.github.com/v3/repos/traffic/
         /// Also known as traffic collector trigger.
         [FunctionName("TrafficCollector")]
-        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext)
+        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger)
         {
-            return ExecuteTrafficCollector(executionContext);
+            return ExecuteTrafficCollector(executionContext, logger);
         }
 
-        private async Task ExecuteTrafficCollector(ExecutionContext executionContext)
+        private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -454,8 +468,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 InvocationId = executionContext.InvocationId.ToString(),
             };
 
+            StatsTracker statsTracker = null;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetCollectorCommonSessionStartEventProperties(context, identifier));
@@ -476,6 +491,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain);
                     GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
+                    statsTracker = new StatsTracker(telemetryClient, httpClient, StatsTrackerRefreshFrequency);
 
                     IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain);
                     CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>());
@@ -509,6 +525,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             finally
             {
                 SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths: string.Empty, GetCollectorCommonSessionStartEventProperties(context, identifier), success);
+                statsTracker?.Stop();
             }
         }
 
@@ -517,7 +534,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as the traffic collector.
         /// </summary>
         [FunctionName("Traffic")]
-        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext)
+        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -538,9 +555,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 InvocationId = executionContext.InvocationId.ToString(),
             };
 
+            StatsTracker statsTracker = null;
             string outputPaths = string.Empty;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
@@ -559,10 +577,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
+                    IRecordStatsTracker recordStatsTracker = null;
+
                     foreach (IRecordWriter recordWriter in recordWriters)
                     {
                         recordWriter.SetOutputPathPrefix($"{repositoryDetails.OrganizationId}/{repositoryDetails.RepositoryId}");
+                        if (recordStatsTracker == null)
+                        {
+                            recordStatsTracker = recordWriter;
+                        }
                     }
+
+                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
+
                     TrafficProcessor processor = new TrafficProcessor(authentication, recordWriters, httpClient, telemetryClient, this.apiDomain);
                     await processor.ProcessAsync(repositoryDetails).ConfigureAwait(false);
                 }
@@ -579,6 +606,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             finally
             {
                 SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
+                statsTracker?.Stop();
             }
         }
 
