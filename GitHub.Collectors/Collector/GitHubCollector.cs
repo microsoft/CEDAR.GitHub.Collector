@@ -59,7 +59,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
         protected override IBatchingHttpRequest WrapIntoBatchingHttpRequest(GitHubCollectionNode collectionNode)
         {
             string initialUrl = collectionNode.GetInitialUrl(collectionNode.AdditionalMetadata);
-            return new BatchingGitHubHttpRequest(this.httpClient, initialUrl, collectionNode.ApiName, collectionNode.WhitelistedResponses);
+            return new BatchingGitHubHttpRequest(this.httpClient, initialUrl, collectionNode.ApiName, collectionNode.AllowlistedResponses);
         }
     }
 }

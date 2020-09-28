@@ -98,14 +98,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             this.TelemetryClient.TrackCollectorCacheMiss(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha);
             await this.Cache.CacheAsync(new RepositoryItemTableEntity(repository, DataContract.CommitInstanceRecordType, commitSha, collectorIdentifier)).ConfigureAwait(false);
 
-            List<HttpResponseSignature> whitelistedResponses = new List<HttpResponseSignature>()
+            List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
             {
                 new HttpResponseSignature(HttpStatusCode.NotFound, NotFoundMessage),
                 new HttpResponseSignature(HttpStatusCode.UnprocessableEntity, NoCommitShaFoundResponse(commitSha)),
             };
 
             string url = $"https://{this.apiDomain}/repos/{repository.OrganizationLogin}/{repository.RepositoryName}/commits/{commitSha}";
-            HttpResponseMessage response = await this.HttpClient.GetAsync(url, this.Authentication, DataContract.CommitInstanceApiName, whitelistedResponses).ConfigureAwait(false);
+            HttpResponseMessage response = await this.HttpClient.GetAsync(url, this.Authentication, DataContract.CommitInstanceApiName, allowlistedResponses).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 return;
