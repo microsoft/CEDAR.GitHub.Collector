@@ -37,12 +37,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
 
             this.httpClient.AddResponse(requestUrl, HttpStatusCode.OK, responseMessage);
 
-            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, whitelistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
+            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
             Assert.AreEqual("success", response.SelectToken("$.message").Value<string>());
         }
 
         [TestMethod]
-        public async Task WhitelistedResponse_NoCommitFoundForSha()
+        public async Task AllowlistedResponse_NoCommitFoundForSha()
         {
             string commitSha = "1234567890123456789012345678901234567890";
             string responseMessage = @$"{{""message"": ""{PushCollector.NoCommitShaFoundResponse(commitSha)}""}}";
@@ -50,29 +50,29 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
 
             this.httpClient.AddResponse(requestUrl, HttpStatusCode.UnprocessableEntity, responseMessage);
 
-            List<HttpResponseSignature> whitelistedResponses = new List<HttpResponseSignature>()
+            List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
             {
                 new HttpResponseSignature(HttpStatusCode.UnprocessableEntity, PushCollector.NoCommitShaFoundResponse(commitSha)),
             };
 
-            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, whitelistedResponses).ConfigureAwait(false);
+            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, allowlistedResponses).ConfigureAwait(false);
             Assert.AreEqual(PushCollector.NoCommitShaFoundResponse(commitSha), response.SelectToken("$.message").Value<string>());
         }
 
         [TestMethod]
-        public async Task WhitelistedResponse_GitRepositoryIsEmpty()
+        public async Task AllowlistedResponse_GitRepositoryIsEmpty()
         {
             string responseMessage = @$"{{""message"": ""Git Repository is empty.""}}";
             string requestUrl = $"https://api.github.com/repos/OrganizationLogin/RepositoryName/commits?per_page=100";
 
             this.httpClient.AddResponse(requestUrl, HttpStatusCode.Conflict, responseMessage);
 
-            List<HttpResponseSignature> whitelistedResponses = new List<HttpResponseSignature>()
+            List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
             {
                 new HttpResponseSignature(HttpStatusCode.Conflict, "Git Repository is empty."),
             };
 
-            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, whitelistedResponses).ConfigureAwait(false);
+            JObject response = await this.gitHubHttpClient.GetAndParseAsJObjectAsync(requestUrl, new BasicAuthentication("Identity", "PersonalAccessToken"), apiName: string.Empty, allowlistedResponses).ConfigureAwait(false);
             Assert.AreEqual("Git Repository is empty.", response.SelectToken("$.message").Value<string>());
         }
     }

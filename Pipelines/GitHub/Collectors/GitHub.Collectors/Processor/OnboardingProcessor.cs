@@ -86,7 +86,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 ApiName = DataContract.TeamRepositoriesApiName,
                 GetInitialUrl = additionalMetadata => InitialTeamRepositoriesUrl(onboardingInput, additionalMetadata["TeamId"].Value<long>(), this.apiDomain),
                 AdditionalMetadata = additionalMetadata,
-                WhitelistedResponses = new List<HttpResponseSignature>()
+                AllowlistedResponses = new List<HttpResponseSignature>()
                 {
                     NotFoundSignature
                 }
@@ -165,7 +165,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 ApiName = DataContract.CommitsApiName,
                 GetInitialUrl = additionalMetadata => InitialCommitsUrl(onboardingInput, this.apiDomain),
                 AdditionalMetadata = additionalMetadata,
-                WhitelistedResponses = new List<HttpResponseSignature>()
+                AllowlistedResponses = new List<HttpResponseSignature>()
                 {
                     GitRepositoryIsEmptySignature,
                 }
