@@ -27,7 +27,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 ProduceChildrenAsync = this.ProduceChildrenAsync,
                 ProduceAdditionalMetadata = this.ProduceAdditionalMetadata,
                 ProcessRecordAsync = this.ProcessRecordAsync,
-                WhitelistedResponses = new List<HttpResponseSignature>(this.WhitelistedResponses),
+                AllowlistedResponses = new List<HttpResponseSignature>(this.AllowlistedResponses),
                 HaltCollection = this.HaltCollection,
                 ProduceChildrenFromResponseAsync = this.ProduceChildrenFromResponseAsync,
                 PrepareRecordForOutput = this.PrepareRecordForOutput,

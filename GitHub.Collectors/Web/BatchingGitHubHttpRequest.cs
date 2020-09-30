@@ -18,17 +18,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         private readonly GitHubHttpClient httpClient;
         private readonly string apiName;
-        private readonly List<HttpResponseSignature> whitelistedResponses;
+        private readonly List<HttpResponseSignature> allowlistedResponses;
 
         public bool HasNext { get; private set; }
         public string CurrentUrl { get; private set; }
         public string PreviousUrl { get; private set; }
 
-        public BatchingGitHubHttpRequest(GitHubHttpClient httpClient, string initialUrl, string apiName, List<HttpResponseSignature> whitelistedResponses)
+        public BatchingGitHubHttpRequest(GitHubHttpClient httpClient, string initialUrl, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
             this.httpClient = httpClient;
             this.apiName = apiName;
-            this.whitelistedResponses = whitelistedResponses;
+            this.allowlistedResponses = allowlistedResponses;
 
             this.HasNext = true;
             this.CurrentUrl = initialUrl;
@@ -42,7 +42,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 return null;
             }
 
-            HttpResponseMessage response = await this.httpClient.GetAsync(this.CurrentUrl, authentication, this.apiName, this.whitelistedResponses).ConfigureAwait(false);
+            HttpResponseMessage response = await this.httpClient.GetAsync(this.CurrentUrl, authentication, this.apiName, this.allowlistedResponses).ConfigureAwait(false);
             this.HasNext = false;
             this.PreviousUrl = this.CurrentUrl;
 

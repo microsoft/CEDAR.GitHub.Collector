@@ -67,7 +67,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 string eventsTimelineUrl = $"{eventsTimelineUrlPrefix}?page={index}";
                 try
                 {
-                    JArray responseArray = await this.httpClient.GetAndParseAsJArrayAsync(eventsTimelineUrl, this.authentication, "GitHub.Repos.Events", whitelistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
+                    JArray responseArray = await this.httpClient.GetAndParseAsJArrayAsync(eventsTimelineUrl, this.authentication, "GitHub.Repos.Events", allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
                     foreach (JToken responseItem in responseArray)
                     {
                         eventObject = (JObject)responseItem;

@@ -52,7 +52,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             if (organizationUrlToken != null)
             {
                 string organizationUrl = organizationUrlToken.Value<string>();
-                await this.ProcessUrlAsync(organizationUrl, OrganizationInstanceRecordType, whitelistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
+                await this.ProcessUrlAsync(organizationUrl, OrganizationInstanceRecordType, allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
             }
 
             JToken senderUrlToken = jsonObject.SelectToken($"$.sender.url");
@@ -60,17 +60,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             {
                 string senderUrl = senderUrlToken.Value<string>();
                 // There are cases where we receive this payload for removed team members, members no longer exist in GitHub. Therefore, the following call can fail with 404 not found.
-                List<HttpResponseSignature> whitelistedResponses = new List<HttpResponseSignature>()
+                List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
                 {
                     UserNotFoundResponse,
                 };
-                await this.ProcessUrlAsync(senderUrl, UserInstanceRecordType, whitelistedResponses).ConfigureAwait(false);
+                await this.ProcessUrlAsync(senderUrl, UserInstanceRecordType, allowlistedResponses).ConfigureAwait(false);
             }
         }
 
-        private async Task ProcessUrlAsync(string requestUrl, string recordType, List<HttpResponseSignature> whitelistedResponses)
+        private async Task ProcessUrlAsync(string requestUrl, string recordType, List<HttpResponseSignature> allowlistedResponses)
         {
-            HttpResponseMessage response = await this.HttpClient.GetConditionalViaETagAsync(requestUrl, recordType, this.Authentication, whitelistedResponses).ConfigureAwait(false);
+            HttpResponseMessage response = await this.HttpClient.GetConditionalViaETagAsync(requestUrl, recordType, this.Authentication, allowlistedResponses).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotModified)
             {
                 return;
@@ -78,7 +78,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 
             if (!response.IsSuccessStatusCode)
             {
-                // Permitted whitelisted response, but we should not serialize it.
+                // Permitted allowlisted response, but we should not serialize it.
                 return;
             }
 

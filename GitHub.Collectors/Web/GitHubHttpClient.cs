@@ -54,7 +54,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             this.failedRequestCount = 0;
         }
 
-        public async Task<HttpResponseMessage> GetConditionalViaETagAsync(string requestUrl, string recordType, IAuthentication authentication, List<HttpResponseSignature> whitelistedResponses)
+        public async Task<HttpResponseMessage> GetConditionalViaETagAsync(string requestUrl, string recordType, IAuthentication authentication, List<HttpResponseSignature> allowlistedResponses)
         {
             string eTag = string.Empty;
             ConditionalRequestTableEntity cachedRequest = await this.requestCache.RetrieveAsync(new ConditionalRequestTableEntity(requestUrl)).ConfigureAwait(false);
@@ -63,7 +63,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 eTag = cachedRequest.GitHubETag;
             }
 
-            HttpResponseMessage result = await this.MakeRequestAsync(requestUrl, authentication, apiName: recordType, eTag, whitelistedResponses, async () => await this.httpClient.GetAsync(requestUrl, authentication, GitHubProductInfoHeaderValue, eTag).ConfigureAwait(false));
+            HttpResponseMessage result = await this.MakeRequestAsync(requestUrl, authentication, apiName: recordType, eTag, allowlistedResponses, async () => await this.httpClient.GetAsync(requestUrl, authentication, GitHubProductInfoHeaderValue, eTag).ConfigureAwait(false));
 
             if (result.StatusCode == HttpStatusCode.OK)
             {
@@ -79,12 +79,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             return result;
         }
 
-        public Task<HttpResponseMessage> GetAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> whitelistedResponses)
+        public Task<HttpResponseMessage> GetAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
-            return this.MakeRequestAsync(requestUrl, authentication, apiName, eTag: string.Empty, whitelistedResponses, () => this.httpClient.GetAsync(requestUrl, authentication, GitHubProductInfoHeaderValue, eTag: string.Empty));
+            return this.MakeRequestAsync(requestUrl, authentication, apiName, eTag: string.Empty, allowlistedResponses, () => this.httpClient.GetAsync(requestUrl, authentication, GitHubProductInfoHeaderValue, eTag: string.Empty));
         }
 
-        public async Task<HttpResponseMessage> MakeRequestAsync(string requestUrl, IAuthentication authentication, string apiName, string eTag, List<HttpResponseSignature> whitelistedResponses, Func<Task<HttpResponseMessage>> httpMethodCallback)
+        public async Task<HttpResponseMessage> MakeRequestAsync(string requestUrl, IAuthentication authentication, string apiName, string eTag, List<HttpResponseSignature> allowlistedResponses, Func<Task<HttpResponseMessage>> httpMethodCallback)
         {
             HttpResponseMessage response = null;
             int attemptIndex = 0;
@@ -110,7 +110,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 await this.rateLimiter.UpdateStatsAsync(authentication.Identity, requestUrl, response).ConfigureAwait(false);
             }
 
-            await this.ThrowOnFatalResponseAsync(response, requestUrl, attemptIndex, authentication.Identity, whitelistedResponses).ConfigureAwait(false);
+            await this.ThrowOnFatalResponseAsync(response, requestUrl, attemptIndex, authentication.Identity, allowlistedResponses).ConfigureAwait(false);
             this.successfulRequestCount++;
             return response;
         }
@@ -171,7 +171,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             return Tuple.Create(shallRetry, delayBeforeRetry);
         }
 
-        private async Task ThrowOnFatalResponseAsync(HttpResponseMessage response, string requestUrl, int attemptIndex, string identity, List<HttpResponseSignature> whitelistedResponses)
+        private async Task ThrowOnFatalResponseAsync(HttpResponseMessage response, string requestUrl, int attemptIndex, string identity, List<HttpResponseSignature> allowlistedResponses)
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {
@@ -185,17 +185,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 JObject responseContentObject = JObject.Parse(responseContent);
                 string message = responseContentObject.SelectToken("$.message").Value<string>();
 
-                foreach (HttpResponseSignature whitelistedResponse in whitelistedResponses)
+                foreach (HttpResponseSignature allowlistedResponse in allowlistedResponses)
                 {
-                    if (whitelistedResponse.statusCode == responseStatusCode && whitelistedResponse.Matches(responseStatusCode, message))
+                    if (allowlistedResponse.statusCode == responseStatusCode && allowlistedResponse.Matches(responseStatusCode, message))
                     {
-                        Dictionary<string, string> whitelistedResponseProperties = new Dictionary<string, string>()
+                        Dictionary<string, string> allowlistedResponseProperties = new Dictionary<string, string>()
                         {
                             { "RequestUrl", requestUrl },
                             { "ResponseStatusCode", responseStatusCode.ToString() },
                             { "ResponseMessage", message },
                         };
-                        this.telemetryClient.TrackEvent("WhitelistedResponse", whitelistedResponseProperties);
+                        this.telemetryClient.TrackEvent("AllowlistedResponse", allowlistedResponseProperties);
 
                         return;
                     }
@@ -222,25 +222,25 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             throw fatalException;
         }
 
-        public async Task<JObject> GetAndParseAsJObjectAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> whitelistedResponses)
+        public async Task<JObject> GetAndParseAsJObjectAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
-            HttpResponseMessage response = await this.GetAsync(requestUrl, authentication, apiName, whitelistedResponses).ConfigureAwait(false);
+            HttpResponseMessage response = await this.GetAsync(requestUrl, authentication, apiName, allowlistedResponses).ConfigureAwait(false);
             return await HttpUtility.ParseAsJObjectAsync(response).ConfigureAwait(false);
         }
 
-        public async Task<JArray> GetAndParseAsJArrayAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> whitelistedResponses)
+        public async Task<JArray> GetAndParseAsJArrayAsync(string requestUrl, IAuthentication authentication, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
-            HttpResponseMessage response = await this.GetAsync(requestUrl, authentication, apiName, whitelistedResponses).ConfigureAwait(false);
+            HttpResponseMessage response = await this.GetAsync(requestUrl, authentication, apiName, allowlistedResponses).ConfigureAwait(false);
             return await HttpUtility.ParseAsJArrayAsync(response).ConfigureAwait(false);
         }
 
-        public async Task<JObject> PostAndParseAsJObjectAsync(string requestUrl, string requestBody, IAuthentication authentication, string apiName, List<HttpResponseSignature> whitelistedResponses)
+        public async Task<JObject> PostAndParseAsJObjectAsync(string requestUrl, string requestBody, IAuthentication authentication, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
             HttpResponseMessage response = await this.MakeRequestAsync(requestUrl,
                                                                        authentication,
                                                                        apiName,
                                                                        eTag: String.Empty,
-                                                                       whitelistedResponses,
+                                                                       allowlistedResponses,
                                                                        () => this.httpClient.PostAsync(requestUrl, requestBody, authentication, GitHubProductInfoHeaderValue)
             ).ConfigureAwait(false);
             return await HttpUtility.ParseAsJObjectAsync(response).ConfigureAwait(false);
