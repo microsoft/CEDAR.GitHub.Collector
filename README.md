@@ -2,6 +2,7 @@
 
 # Introduction
 
+
 CEDAR.GitHub.Collector is a set of Azure Functions to collect engineering metadata from GitHub. It consists of four collectors:
 1. Main: the main collector processes the data coming directly from the GitHub Webhooks
 2. Delta: the delta collector makes requests against the [EventsTimeline API](https://developer.github.com/v3/activity/events/#list-repository-events) to ensure that data is not missed through the main collector
