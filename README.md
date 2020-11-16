@@ -33,6 +33,7 @@ The Azure Functions Tools extension can be installed during the VS installation 
 Create a fork of this repository and open the GitHub.Collectors.sln solution file in Visual Studio. 
 
 
+
 ## 3. Create `local.settings.json`
 Create a `local.settings.json` file in the under the GitHub.Collectors.Functions project.
 
