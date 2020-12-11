@@ -104,7 +104,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                     {
                         string orgName = responseItem.SelectToken("$.account.login").Value<string>();
                         string installationId = responseItem.SelectToken("$.id").Value<string>();
-                        OrgNameToInstallationIdMap.[orgName] = installationId;
+                        OrgNameToInstallationIdMap[orgName] = installationId;
 
                         if (orgName.Equals(this.organization))
                         {
