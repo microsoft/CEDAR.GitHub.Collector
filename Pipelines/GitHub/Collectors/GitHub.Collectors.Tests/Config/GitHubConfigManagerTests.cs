@@ -39,7 +39,8 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
                 'Storage': [
                     {
                         'Type': 'AzureDataLakeStorageV1',
-                        'RootFolder': 'GitHub'
+                        'RootFolder': 'GitHub',
+                        'Version': 'v1'
                     },
                     {
                         'Type': 'AzureBlob',
