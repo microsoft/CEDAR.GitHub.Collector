@@ -16,6 +16,7 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using System.Collections.Concurrent;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
@@ -37,8 +38,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         /// <summary>
         /// Maps an organization name to a Tuple containing an expiry date and the token itself.
         /// </summary>
-        private static Dictionary<string, Tuple<DateTime, string>> TokenCache = new Dictionary<string, Tuple<DateTime, string>>();
-        private static Dictionary<string, string> OrgNameToInstallationIdMap = new Dictionary<string, string>();
+        private static ConcurrentDictionary<string, Tuple<DateTime, string>> TokenCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
+        private static ConcurrentDictionary<string, string> OrgNameToInstallationIdMap = new ConcurrentDictionary<string, string>();
 
         public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin)
         {
@@ -63,12 +64,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                 throw new FatalTerminalException("dependencies must be set before generating authorization header");
             }
 
-            if (TokenCache.ContainsKey(this.organization))
-            {
-                TimeSpan timeToRefresh = TokenCache[this.organization].Item1.Subtract(TimeSpan.FromMinutes(15)).Subtract(DateTime.UtcNow);
+            if (TokenCache.TryGetValue(this.organization, out Tuple<DateTime, string> tokenEpiryAndToken))
+            { 
+                TimeSpan timeToRefresh = tokenEpiryAndToken.Item1.Subtract(TimeSpan.FromMinutes(15)).Subtract(DateTime.UtcNow);
                 if (timeToRefresh.TotalMilliseconds > 0)
                 {
-                    return TokenCache[this.organization].Item2;
+                    return tokenEpiryAndToken.Item2;
                 }
             }
 
@@ -80,9 +81,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
         private async Task<string> FindInstallationId(string jwt)
         {
-            string cachedInstallationId;
-
-            if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out cachedInstallationId))
+            if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out string cachedInstallationId))
             {
                 return cachedInstallationId;
             }
@@ -103,7 +102,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                     {
                         string orgName = responseItem.SelectToken("$.account.login").Value<string>();
                         string installationId = responseItem.SelectToken("$.id").Value<string>();
-                        OrgNameToInstallationIdMap.Add(orgName, installationId);
+                        OrgNameToInstallationIdMap[orgName] = installationId;
 
                         if (orgName.Equals(this.organization))
                         {
