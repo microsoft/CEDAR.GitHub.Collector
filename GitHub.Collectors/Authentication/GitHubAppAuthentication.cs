@@ -64,12 +64,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                 throw new FatalTerminalException("dependencies must be set before generating authorization header");
             }
 
-            if (TokenCache.ContainsKey(this.organization))
-            {
-                TimeSpan timeToRefresh = TokenCache[this.organization].Item1.Subtract(TimeSpan.FromMinutes(15)).Subtract(DateTime.UtcNow);
+            if (TokenCache.TryGetValue(this.organization, out Tuple<DateTime, string> tokenEpiryAndToken))
+            { 
+                TimeSpan timeToRefresh = tokenEpiryAndToken.Item1.Subtract(TimeSpan.FromMinutes(15)).Subtract(DateTime.UtcNow);
                 if (timeToRefresh.TotalMilliseconds > 0)
                 {
-                    return TokenCache[this.organization].Item2;
+                    return tokenEpiryAndToken.Item2;
                 }
             }
 
@@ -81,9 +81,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
         private async Task<string> FindInstallationId(string jwt)
         {
-            string cachedInstallationId;
-
-            if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out cachedInstallationId))
+            if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out string cachedInstallationId))
             {
                 return cachedInstallationId;
             }
