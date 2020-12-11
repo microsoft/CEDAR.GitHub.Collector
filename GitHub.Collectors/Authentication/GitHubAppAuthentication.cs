@@ -16,6 +16,7 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using System.Collections.Concurrent;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
@@ -37,8 +38,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         /// <summary>
         /// Maps an organization name to a Tuple containing an expiry date and the token itself.
         /// </summary>
-        private static Dictionary<string, Tuple<DateTime, string>> TokenCache = new Dictionary<string, Tuple<DateTime, string>>();
-        private static Dictionary<string, string> OrgNameToInstallationIdMap = new Dictionary<string, string>();
+        private static ConcurrentDictionary<string, Tuple<DateTime, string>> TokenCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
+        private static ConcurrentDictionary<string, string> OrgNameToInstallationIdMap = new ConcurrentDictionary<string, string>();
 
         public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin)
         {
@@ -103,7 +104,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                     {
                         string orgName = responseItem.SelectToken("$.account.login").Value<string>();
                         string installationId = responseItem.SelectToken("$.id").Value<string>();
-                        OrgNameToInstallationIdMap.Add(orgName, installationId);
+                        OrgNameToInstallationIdMap.[orgName] = installationId;
 
                         if (orgName.Equals(this.organization))
                         {
