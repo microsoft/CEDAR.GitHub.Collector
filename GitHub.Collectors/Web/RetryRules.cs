@@ -12,7 +12,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 {
     public static class RetryRules
     {
-        private static readonly TimeSpan[] LinearFastRetryStrategyDelays = Enumerable.Repeat(TimeSpan.FromSeconds(5), 15).ToArray();
+        private static readonly TimeSpan[] LinearFastRetryStrategyDelays = Enumerable.Repeat(TimeSpan.FromSeconds(5), 50).ToArray();
         private static readonly TimeSpan[] ExponentialBackoffFastRetryStrategyDelays = new TimeSpan[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5) };
         private static readonly TimeSpan[] ExponentialBackoffSlowRetryStrategyDelays = new TimeSpan[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(5) };
 
