@@ -27,7 +27,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         private readonly ICache<ConditionalRequestTableEntity> requestCache;
         private readonly ITelemetryClient telemetryClient;
 
-
         public static ProductInfoHeaderValue GitHubProductInfoHeaderValue = new ProductInfoHeaderValue("CloudMineGitHubCollector", "1.0.0");
 
         private static readonly RetryRule[] RetryRuleCollection = new RetryRule[]
