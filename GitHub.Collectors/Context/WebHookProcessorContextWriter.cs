@@ -6,10 +6,12 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Context
 {
-    public class WebhookProcessorContextWriter : ContextWriter<WebhookProcessorContext>
+    public class WebhookProcessorContextWriter : FunctionContextWriter<WebhookProcessorContext>
     {
         public override void AugmentMetadata(JObject metadata, WebhookProcessorContext functionContext)
         {
+            base.AugmentMetadata(metadata, functionContext);
+
             string logicAppStartDate = functionContext.LogicAppStartDate;
             if (!string.IsNullOrEmpty(logicAppStartDate))
             {
