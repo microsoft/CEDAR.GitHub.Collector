@@ -32,18 +32,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public const int MaxRequestExceptionCount = 10;
         public static readonly TimeSpan[] DelayBeforeRequestExceptions = Enumerable.Repeat(TimeSpan.FromSeconds(5), MaxRequestExceptionCount).ToArray();
 
-        private static readonly RetryRule[] RetryRuleCollection = new RetryRule[]
-        {
-            RetryRules.GatewayTimeoutRetryRule,
-            RetryRules.BadGatewayRetryRule,
-            RetryRules.InternalServerErrorRetryRule,
-            RetryRules.RateLimiterAbuseRetryRule,
-        };
-
         public int SuccessfulRequestCount => this.successfulRequestCount;
         private volatile int successfulRequestCount;
         public int FailedRequestCount => this.failedRequestCount;
         private volatile int failedRequestCount;
+
+        private readonly RetryRule[] retryRuleCollection;
 
         public GitHubHttpClient(IHttpClient httpClient, IRateLimiter rateLimiter, ICache<ConditionalRequestTableEntity> requestCache, ITelemetryClient telemetryClient)
         {
@@ -54,6 +48,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
             this.successfulRequestCount = 0;
             this.failedRequestCount = 0;
+
+            this.retryRuleCollection = new RetryRule[]
+            {
+                RetryRules.GatewayTimeoutRetryRule(),
+                RetryRules.BadGatewayRetryRule(),
+                RetryRules.InternalServerErrorRetryRule(),
+                RetryRules.RateLimiterAbuseRetryRule(),
+            };
         }
 
         public async Task<HttpResponseMessage> GetConditionalViaETagAsync(string requestUrl, string recordType, IAuthentication authentication, List<HttpResponseSignature> allowlistedResponses)
@@ -89,7 +91,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public async Task<HttpResponseMessage> MakeRequestAsync(string requestUrl, IAuthentication authentication, string apiName, string eTag, List<HttpResponseSignature> allowlistedResponses, Func<Task<HttpResponseMessage>> httpMethodCallback)
         {
             // New request, clear retry rules (attempt indices)
-            foreach (RetryRule retryRule in RetryRuleCollection)
+            foreach (RetryRule retryRule in this.retryRuleCollection)
             {
                 retryRule.Clear();
             }
@@ -188,7 +190,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             TimeSpan delayBeforeRetry = TimeSpan.Zero;
 
             long attemptIndex = -1;
-            foreach (RetryRule retryRule in RetryRuleCollection)
+            foreach (RetryRule retryRule in this.retryRuleCollection)
             {
                 TimeSpan[] delayBeforeRetries = retryRule.DelayBeforeRetries;
                 if (retryRule.AttemptIndex > delayBeforeRetries.Length)
@@ -204,7 +206,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                     attemptIndex = retryRule.AttemptIndex;
                     shallRetry = true;
                     delayBeforeRetry = delayBeforeRetries[retryRule.AttemptIndex - 1];
-                    
+
                     // If there is a RetryAfter already provided as part of the response, honor that instead of our internal delay.
                     long retryAfter = RateLimiter.GetRetryAfter(response.Headers);
                     if (retryAfter != long.MinValue)
