@@ -203,10 +203,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 bool matches = await retryRule.ShallRetryAsync(response).ConfigureAwait(false);
                 if (matches)
                 {
-                    retryRule.Consume();
-                    attemptIndex = retryRule.AttemptIndex + 1;
-                    shallRetry = true;
                     delayBeforeRetry = delayBeforeRetries[retryRule.AttemptIndex];
+                    shallRetry = true;
+
+                    retryRule.Consume();
+                    attemptIndex = retryRule.AttemptIndex;
 
                     // If there is a RetryAfter already provided as part of the response, honor that instead of our internal delay.
                     long retryAfter = RateLimiter.GetRetryAfter(response.Headers);
