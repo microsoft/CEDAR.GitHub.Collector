@@ -15,13 +15,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         private static readonly TimeSpan[] LinearFastRetryStrategyDelays = Enumerable.Repeat(TimeSpan.FromSeconds(0), 50).ToArray();
         private static readonly TimeSpan[] ExponentialBackoffFastRetryStrategyDelays = new TimeSpan[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5) };
         private static readonly TimeSpan[] ExponentialBackoffSlowRetryStrategyDelays = new TimeSpan[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(5) };
-        private static readonly TimeSpan[] ImmediateOnce = new TimeSpan[] { TimeSpan.Zero };
-
-        public static RetryRule NotFoundRetryRule() => new RetryRule()
-        {
-            ShallRetryAsync = response => Task.FromResult(response.StatusCode == HttpStatusCode.NotFound),
-            DelayBeforeRetries = ImmediateOnce,
-        };
 
         // Note: since retry rules are stateful (they track their remaining attempts), the following are defined as static methods rather than variables. This way, everytime the method is called, a new instance of the underlying object will be created and retry rules won't be shared.
         public static RetryRule GatewayTimeoutRetryRule() => new RetryRule()

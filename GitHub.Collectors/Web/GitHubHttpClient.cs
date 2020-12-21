@@ -55,7 +55,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 RetryRules.BadGatewayRetryRule(),
                 RetryRules.InternalServerErrorRetryRule(),
                 RetryRules.RateLimiterAbuseRetryRule(),
-                RetryRules.NotFoundRetryRule(),
             };
         }
 
