@@ -127,9 +127,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 }
                 TimeSpan elapsed = DateTime.UtcNow - webRequestDateTime;
 
-                this.telemetryClient.TrackRequest(authentication.Identity, apiName, requestUrl, eTag, elapsed, response);
+                if (response != null)
+                {
+                    this.telemetryClient.TrackRequest(authentication.Identity, apiName, requestUrl, eTag, elapsed, response);
 
-                await this.rateLimiter.UpdateStatsAsync(authentication.Identity, requestUrl, response).ConfigureAwait(false);
+                    await this.rateLimiter.UpdateStatsAsync(authentication.Identity, requestUrl, response).ConfigureAwait(false);
+                }
             }
 
             await this.ThrowOnFatalResponseAsync(response, requestUrl, exceptionCount, authentication.Identity, allowlistedResponses).ConfigureAwait(false);
