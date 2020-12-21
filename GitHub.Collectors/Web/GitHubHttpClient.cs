@@ -55,6 +55,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 RetryRules.BadGatewayRetryRule(),
                 RetryRules.InternalServerErrorRetryRule(),
                 RetryRules.RateLimiterAbuseRetryRule(),
+                RetryRules.NotFoundRetryRule(),
             };
         }
 
@@ -193,7 +194,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             foreach (RetryRule retryRule in this.retryRuleCollection)
             {
                 TimeSpan[] delayBeforeRetries = retryRule.DelayBeforeRetries;
-                if (retryRule.AttemptIndex > delayBeforeRetries.Length)
+                if (retryRule.AttemptIndex == delayBeforeRetries.Length)
                 {
                     // No more attempts for this retry rule, bail out.
                     continue;
@@ -203,9 +204,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 if (matches)
                 {
                     retryRule.Consume();
-                    attemptIndex = retryRule.AttemptIndex;
+                    attemptIndex = retryRule.AttemptIndex + 1;
                     shallRetry = true;
-                    delayBeforeRetry = delayBeforeRetries[retryRule.AttemptIndex - 1];
+                    delayBeforeRetry = delayBeforeRetries[retryRule.AttemptIndex];
 
                     // If there is a RetryAfter already provided as part of the response, honor that instead of our internal delay.
                     long retryAfter = RateLimiter.GetRetryAfter(response.Headers);
