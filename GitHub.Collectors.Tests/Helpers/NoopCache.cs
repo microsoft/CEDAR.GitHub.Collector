@@ -14,6 +14,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Tests.Helpers
             return Task.CompletedTask;
         }
 
+        public Task<bool> CacheAtomicAsync(T currentTableEntity, T newTableEntity)
+        {
+            // Assume success.
+            return Task.FromResult(true);
+        }
+
         public Task<bool> ExistsAsync(T tableEntity)
         {
             // Assume failure.
