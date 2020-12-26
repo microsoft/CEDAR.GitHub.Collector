@@ -8,11 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using System;
 
-[assembly: FunctionsStartup(typeof(Microsoft.CloudMine.AzureDevOps.Collectors.Functions.ServiceStartup))]
+[assembly: FunctionsStartup(typeof(Microsoft.CloudMine.GitHub.Collectors.Functions.ServiceStartup))]
 
-namespace Microsoft.CloudMine.AzureDevOps.Collectors.Functions
+namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
-    //TODO : add TelemetryClient in ServiceStartup so that it can be utilized before function constructor 
+    //TODO : add TelemetryClient in ServiceStartup so that it can be utilized before function constructor. According to Azure Function discussions, this is not trivial, so keeping this as a TODO for now. 
     public class ServiceStartup : FunctionsStartup
     {
         public override void Configure(IFunctionsHostBuilder builder)
