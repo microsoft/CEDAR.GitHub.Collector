@@ -332,12 +332,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 
         // ToDo: supports "since" and "until" parameters if we want to slice the data.
         private static string InitialCommitsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/commits?per_page=100";
-        private static string InitialCommitCommentsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/comments?per_page=25"; // Use a lower pages (25 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
+        private static string InitialCommitCommentsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/comments?per_page=50"; // Use a lower pages (50 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
 
         private static string InitialPullRequestsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/pulls?state=all&per_page=100";
         private static string InitialPullRequestReviewsUrl(OnboardingInput onboardingInput, long pullNumber, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/pulls/{pullNumber}/reviews";
         // ToDo: supports "since" parameter if we want to slice the data.
-        private static string InitialPullRequestCommentsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/pulls/comments?per_page=25"; // Use a lower pages (25 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
+        private static string InitialPullRequestCommentsUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/pulls/comments?per_page=50"; // Use a lower pages (50 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
 
         // ToDo: supports "since" parameter if we want to slice the data.
         private static string InitialIssuesUrl(OnboardingInput onboardingInput, string apiDomain) => $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/issues?state=all&per_page=100";
@@ -346,7 +346,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         {
             // The since parameter must be URL encoded or the parameter will be ignored by GitHub API
             string sinceParameter = System.Web.HttpUtility.UrlEncode(since.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-            return $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/issues/comments?since={sinceParameter}&per_page=25&sort=created"; // Use a lower pages (25 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
+            return $"https://{apiDomain}/repos/{onboardingInput.OrganizationLogin}/{onboardingInput.RepositoryName}/issues/comments?since={sinceParameter}&per_page=50&sort=created"; // Use a lower pages (50 for now) since some large repos 100 pages timeout and return 502 (Bad Gateway). Suggested by the GitHub API folks.
         }
     }
 }
