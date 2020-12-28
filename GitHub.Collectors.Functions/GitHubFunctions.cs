@@ -280,7 +280,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 TypeNameHandling = TypeNameHandling.None
             };
             Repository repositoryDetails = JsonConvert.DeserializeObject<Repository>(queueItem, serializerSettings);
-            FunctionContextWriter contextWriter = new FunctionContextWriter();
+            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             string identifier = $"EventsTimeline";
 
             FunctionContext context = new FunctionContext()
@@ -358,7 +358,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             };
             OnboardingInput onboardingInput = JsonConvert.DeserializeObject<OnboardingInput>(queueItem, serializerSettings);
             Repository repositoryDetails = onboardingInput.ToRepository();
-            FunctionContextWriter contextWriter = new FunctionContextWriter();
+            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             string identifier = $"Onboarding";
 
             FunctionContext context = new FunctionContext()
@@ -544,7 +544,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 TypeNameHandling = TypeNameHandling.None
             };
             Repository repositoryDetails = JsonConvert.DeserializeObject<Repository>(queueItem, serializerSettings);
-            FunctionContextWriter contextWriter = new FunctionContextWriter();
+            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             string identifier = $"Traffic";
 
             FunctionContext context = new FunctionContext()

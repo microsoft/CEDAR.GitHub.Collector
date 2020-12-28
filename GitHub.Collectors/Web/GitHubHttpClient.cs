@@ -27,21 +27,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         private readonly ICache<ConditionalRequestTableEntity> requestCache;
         private readonly ITelemetryClient telemetryClient;
 
-
         public static ProductInfoHeaderValue GitHubProductInfoHeaderValue = new ProductInfoHeaderValue("CloudMineGitHubCollector", "1.0.0");
 
-        private static readonly RetryRule[] RetryRuleCollection = new RetryRule[]
-        {
-            RetryRules.GatewayTimeoutRetryRule,
-            RetryRules.BadGatewayRetryRule,
-            RetryRules.InternalServerErrorRetryRule,
-            RetryRules.RateLimiterAbuseRetryRule,
-        };
+        public const int MaxRequestExceptionCount = 10;
+        public static readonly TimeSpan[] DelayBeforeRequestExceptions = Enumerable.Repeat(TimeSpan.FromSeconds(5), MaxRequestExceptionCount).ToArray();
 
         public int SuccessfulRequestCount => this.successfulRequestCount;
         private volatile int successfulRequestCount;
         public int FailedRequestCount => this.failedRequestCount;
         private volatile int failedRequestCount;
+
+        private readonly RetryRule[] retryRuleCollection;
 
         public GitHubHttpClient(IHttpClient httpClient, IRateLimiter rateLimiter, ICache<ConditionalRequestTableEntity> requestCache, ITelemetryClient telemetryClient)
         {
@@ -52,6 +48,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
             this.successfulRequestCount = 0;
             this.failedRequestCount = 0;
+
+            this.retryRuleCollection = new RetryRule[]
+            {
+                RetryRules.GatewayTimeoutRetryRule(),
+                RetryRules.BadGatewayRetryRule(),
+                RetryRules.InternalServerErrorRetryRule(),
+                RetryRules.RateLimiterAbuseRetryRule(),
+            };
         }
 
         public async Task<HttpResponseMessage> GetConditionalViaETagAsync(string requestUrl, string recordType, IAuthentication authentication, List<HttpResponseSignature> allowlistedResponses)
@@ -86,14 +90,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         public async Task<HttpResponseMessage> MakeRequestAsync(string requestUrl, IAuthentication authentication, string apiName, string eTag, List<HttpResponseSignature> allowlistedResponses, Func<Task<HttpResponseMessage>> httpMethodCallback)
         {
+            // New request, clear retry rules (attempt indices)
+            foreach (RetryRule retryRule in this.retryRuleCollection)
+            {
+                retryRule.Clear();
+            }
+
             HttpResponseMessage response = null;
-            int attemptIndex = 0;
+            int exceptionCount = 0;
             TimeSpan delayBeforeRetry = TimeSpan.Zero;
             bool shallRetry = true;
             while (shallRetry)
             {
-                attemptIndex++;
-                if (attemptIndex != 1)
+                if (delayBeforeRetry != TimeSpan.Zero)
                 {
                     await Task.Delay(delayBeforeRetry).ConfigureAwait(false);
                 }
@@ -101,29 +110,93 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 await this.rateLimiter.WaitIfNeededAsync(authentication).ConfigureAwait(false);
 
                 DateTime webRequestDateTime = DateTime.UtcNow;
-                response = await httpMethodCallback();
-                (shallRetry, delayBeforeRetry) = await this.ShallRetryAsync(response, requestUrl, attemptIndex, authentication.Identity).ConfigureAwait(false);
+
+                try
+                {
+                    response = await httpMethodCallback();
+                    (shallRetry, delayBeforeRetry) = await this.ShallRetryAsync(response, requestUrl, authentication.Identity).ConfigureAwait(false);
+                }
+                catch (Exception requestException)
+                {
+                    exceptionCount++;
+                    (shallRetry, delayBeforeRetry) = await this.ShallRetryAsync(requestException, requestUrl, exceptionCount, authentication.Identity).ConfigureAwait(false);
+                    if (!shallRetry)
+                    {
+                        throw requestException;
+                    }
+                }
                 TimeSpan elapsed = DateTime.UtcNow - webRequestDateTime;
 
-                this.telemetryClient.TrackRequest(authentication.Identity, apiName, requestUrl, eTag, elapsed, response);
+                if (response != null)
+                {
+                    this.telemetryClient.TrackRequest(authentication.Identity, apiName, requestUrl, eTag, elapsed, response);
 
-                await this.rateLimiter.UpdateStatsAsync(authentication.Identity, requestUrl, response).ConfigureAwait(false);
+                    await this.rateLimiter.UpdateStatsAsync(authentication.Identity, requestUrl, response).ConfigureAwait(false);
+                }
             }
 
-            await this.ThrowOnFatalResponseAsync(response, requestUrl, attemptIndex, authentication.Identity, allowlistedResponses).ConfigureAwait(false);
+            await this.ThrowOnFatalResponseAsync(response, requestUrl, exceptionCount, authentication.Identity, allowlistedResponses).ConfigureAwait(false);
             this.successfulRequestCount++;
             return response;
         }
 
-        private async Task<Tuple<bool, TimeSpan>> ShallRetryAsync(HttpResponseMessage response, string requestUrl, int attemptIndex, string identity)
+        private async Task<Tuple<bool, TimeSpan>> ShallRetryAsync(Exception requestException, string requestUrl, int exceptionCount, string identity)
         {
             bool shallRetry = false;
             TimeSpan delayBeforeRetry = TimeSpan.Zero;
 
-            foreach (RetryRule retryRule in RetryRuleCollection)
+            if (requestException is AggregateException aggregateException)
+            {
+                foreach (Exception innerException in aggregateException.InnerExceptions)
+                {
+                    (shallRetry, delayBeforeRetry) = await this.ShallRetryAsync(innerException, requestUrl, exceptionCount, identity);
+                    if (shallRetry)
+                    {
+                        // Found a signature match for one of the inner exceptions, retry.
+                        return Tuple.Create(shallRetry, delayBeforeRetry);
+                    }
+                }
+
+                // No match for inner exceptions, return false.
+                return Tuple.Create(false, TimeSpan.Zero);
+            }
+
+            if (requestException is HttpRequestException && requestException.Message.Equals("Error while copying content to a stream."))
+            {
+                // Known flaky server issue with GitHub.
+                shallRetry = true;
+                delayBeforeRetry = DelayBeforeRequestExceptions[exceptionCount - 1];
+            }
+
+            if (shallRetry)
+            {
+                // Track web exception in telemetry. No need to track fatal (non-retried) exceptions since they will be tracked elsewhere.
+
+                Dictionary<string, string> properties = new Dictionary<string, string>()
+                {
+                    { "Url", requestUrl },
+                    { "Identity", identity },
+                    { "AttemptIndex", exceptionCount.ToString() },
+                    { "Retried", true.ToString() },
+                    { "Fatal", false.ToString() },
+                    { "DelayBeforeRetry", delayBeforeRetry.ToString() },
+                };
+                this.telemetryClient.TrackException(requestException, "Web request failed.", properties);
+            }
+
+            return Tuple.Create(shallRetry, delayBeforeRetry);
+        }
+
+        private async Task<Tuple<bool, TimeSpan>> ShallRetryAsync(HttpResponseMessage response, string requestUrl, string identity)
+        {
+            bool shallRetry = false;
+            TimeSpan delayBeforeRetry = TimeSpan.Zero;
+
+            long attemptIndex = -1;
+            foreach (RetryRule retryRule in this.retryRuleCollection)
             {
                 TimeSpan[] delayBeforeRetries = retryRule.DelayBeforeRetries;
-                if (attemptIndex > delayBeforeRetries.Length)
+                if (retryRule.AttemptIndex == delayBeforeRetries.Length)
                 {
                     // No more attempts for this retry rule, bail out.
                     continue;
@@ -132,9 +205,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 bool matches = await retryRule.ShallRetryAsync(response).ConfigureAwait(false);
                 if (matches)
                 {
+                    delayBeforeRetry = delayBeforeRetries[retryRule.AttemptIndex];
                     shallRetry = true;
-                    delayBeforeRetry = delayBeforeRetries[attemptIndex - 1];
-                    
+
+                    retryRule.Consume();
+                    attemptIndex = retryRule.AttemptIndex;
+
                     // If there is a RetryAfter already provided as part of the response, honor that instead of our internal delay.
                     long retryAfter = RateLimiter.GetRetryAfter(response.Headers);
                     if (retryAfter != long.MinValue)

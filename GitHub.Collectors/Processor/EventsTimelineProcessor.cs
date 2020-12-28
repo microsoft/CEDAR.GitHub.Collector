@@ -149,15 +149,41 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
             }
             else
             {
+                JToken repoIdToken = eventObject.SelectToken("$.repo.id");
+                JToken repoNameToken = eventObject.SelectToken("$.repo.name");
+                JToken orgIdToken = eventObject.SelectToken("$.org.id");
+                JToken orgLoginToken = eventObject.SelectToken("$.org.login");
+                if (repoIdToken == null || repoNameToken == null || orgIdToken == null || orgLoginToken == null)
+                {
+                    // Sometimes user repositories (forks) show up in the events timeline. Although, we don't know what triggers this, events coming from such repos can miss 
+                    // Organization or Repo details that are crucial for downstream processing. Furthermore, these are not interesting for our purposes.
+                    // Drop such events and log them in telemetry.
+
+                    Dictionary<string, string> properties = new Dictionary<string, string>()
+                    {
+                        { "RecordType", recordType },
+                        { "RecordSha", payloadSha },
+                        { "EventId", eventId.ToString() },
+                        { "CreatedAt", $"{createdAt:O}" },
+                        { "RepositoryId", repoIdToken == null ? "NULL" : repoIdToken.Value<string>() },
+                        { "RepositoryName", repoNameToken == null ? "NULL" : repoNameToken.Value<string>() },
+                        { "OrganizationId", orgIdToken == null ? "NULL" : orgIdToken.Value<string>() },
+                        { "OrganizationLogin", orgLoginToken == null ? "NULL" : orgLoginToken.Value<string>() },
+                    };
+                    this.telemetryClient.TrackEvent("UnexpectedEvent", properties);
+
+                    return;
+                }
+
                 // For some reason we missed this event, re-ingest and log in telemetry.
-                Dictionary<string, string> properties = new Dictionary<string, string>()
+                Dictionary<string, string> missedEventsProperties = new Dictionary<string, string>()
                 {
                     { "RecordType", recordType },
                     { "RecordSha", payloadSha },
                     { "EventId", eventId.ToString() },
                     { "CreatedAt", $"{createdAt:O}" },
                 };
-                this.telemetryClient.TrackEvent("MissedEvent", properties);
+                this.telemetryClient.TrackEvent("MissedEvent", missedEventsProperties);
 
                 RecordContext context = new RecordContext()
                 {
@@ -165,10 +191,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                     AdditionalMetadata = new Dictionary<string, JToken>()
                     {
                         { "ActorId", eventObject.SelectToken("$.actor.id") },
-                        { "RepositoryId", eventObject.SelectToken("$.repo.id") },
-                        { "RepositoryName", eventObject.SelectToken("$.repo.name") },
-                        { "OrganizationId", eventObject.SelectToken("$.org.id") },
-                        { "OrganizationLogin", eventObject.SelectToken("$.org.login") },
+                        { "RepositoryId", repoIdToken },
+                        { "RepositoryName", repoNameToken },
+                        { "OrganizationId", orgIdToken },
+                        { "OrganizationLogin", orgLoginToken },
                         { "CreatedAt", createdAt },
                         { "EventId", eventId },
                     },

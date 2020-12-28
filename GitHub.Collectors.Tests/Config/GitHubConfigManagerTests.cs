@@ -39,7 +39,8 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
                 'Storage': [
                     {
                         'Type': 'AzureDataLakeStorageV1',
-                        'RootFolder': 'GitHub'
+                        'RootFolder': 'GitHub',
+                        'Version': 'v1'
                     },
                     {
                         'Type': 'AzureBlob',
@@ -80,7 +81,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             StorageManager storageManager = this.configManager.GetStorageManager("Main", this.telemetryClient);
             string identifier = "identifier";
             FunctionContext functionContext = new FunctionContext();
-            FunctionContextWriter contextWriter = new FunctionContextWriter();
+            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             AdlsClientWrapper adlsClientWrapper = new AdlsClientWrapper();
             List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter, adlsClientWrapper.AdlsClient);
             Assert.AreEqual(2, recordWriters.Count);
