@@ -42,6 +42,7 @@ Add your GitHub account identity under the key “Identity”.
 
 Add a Personal Access Token associated with your GitHub account under the key “PersonalAccessToken”.
 
+
 ## 4. Setup Azure Storage 
 In [Azure](https://portal.azure.com/) create an Azure storage account where the data you will be collecting from GitHub will be saved.
 
@@ -52,7 +53,21 @@ In [Azure](https://portal.azure.com/) create an Application Insights resource wh
 
 Add the Instrumentation key from this account into your `local.settings.json` file under the key “APPINSIGHTS_INSTRUMENTATIONKEY”.
 
-## 6. Run the Azure Functions Locally with Visual Studio Code
+## 6. Create `Settings.json`
+Create a `Settings.json` file in the GitHub.Collectors.Functions project.
+
+Find the 'Settings.template.json' file and copy its contents into your new `Settings.json` file.
+
+Add your GitHub account identity under the key “Identity”.
+
+Add an AzureDataLakeStorage version under the keys "Storage" > "Version" where the "Type" is Azure Data Lake Storage.
+
+## 7. Upload `Settings.json`
+Create a `github-settings` Blob container in your Azure Storage account.
+
+Open the container and upload 'Settings.json'.
+
+## 8. Run the Azure Functions Locally with Visual Studio Code
 
 In VisualStudio, select the Debug solution configuration and run the GutHub.Collectors.Functions
 
