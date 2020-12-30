@@ -1,0 +1,20 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        // You set the following values.
+        "Identity": "<Username for your GitHub account>",
+        "AzureWebJobsStorage": "<Connection string for your Azure Storage account>",
+        "APPINSIGHTS_INSTRUMENTATIONKEY": "<Instrumentation key for your Azure App Insights instance>",
+        "SettingsPath": "<Settings file path from the github-settings container on Azure. Ex. `Settings.json`.>",
+        // Must enable SSO for the organization the repo lives in (Ex. 'microsoft').
+        "PersonalAccessToken": "<Personal Access Token for your GitHub account>",
+
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        // Disable timer-triggered functions for local debugging. The functions can be selectively enabled when running locally.
+        "AzureWebJobs.TrafficTimer.Disabled": "true",
+        "EventCountLimit": 100,
+
+        // This will be moved to the global config in the future.
+        "ApiDomain": "api.github.com"
+    }
+}
