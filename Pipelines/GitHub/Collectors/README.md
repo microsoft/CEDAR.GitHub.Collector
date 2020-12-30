@@ -32,16 +32,14 @@ The Azure Functions Tools extension can be installed during the VS installation 
 ## 2. Fork Repository
 Create a fork of this repository and open the GitHub.Collectors.sln solution file in Visual Studio. 
 
-
 ## 3. Create `local.settings.json`
 Create a `local.settings.json` file in the under the GitHub.Collectors.Functions project.
 
 Find the local.settings.template.json file and copy its contents into your new `local.settings.json` file.
 
-Add your GitHub account identity under the key “Identity”.
+Add your GitHub account username under the key “Identity”.
 
 Add a Personal Access Token associated with your GitHub account under the key “PersonalAccessToken”.
-
 
 ## 4. Setup Azure Storage 
 In [Azure](https://portal.azure.com/) create an Azure storage account where the data you will be collecting from GitHub will be saved.
@@ -56,11 +54,9 @@ Add the Instrumentation key from this account into your `local.settings.json` fi
 ## 6. Create `Settings.json`
 Create a `Settings.json` file in the GitHub.Collectors.Functions project.
 
-Find the 'Settings.template.json' file and copy its contents into your new `Settings.json` file.
+Find the `Settings.template.json` file and copy its contents into your new `Settings.json` file.
 
-Add your GitHub account identity under the key “Identity”.
-
-Add an AzureDataLakeStorage version under the keys "Storage" > "Version" where the "Type" is Azure Data Lake Storage.
+Add your GitHub account username under the key “Identity”.
 
 ## 7. Upload `Settings.json`
 Create a `github-settings` Blob container in your Azure Storage account.
@@ -69,19 +65,17 @@ Open the container and upload 'Settings.json'.
 
 ## 8. Run the Azure Functions Locally with Visual Studio Code
 
-In VisualStudio, select the Debug solution configuration and run the GutHub.Collectors.Functions
-
-After the functions Initialize you will see “Now listening on http://0.0.0.0.7071”
+In Visual Studio, select the Debug solution configuration and run GutHub.Collectors.Functions.
 
 ### Test the Onboarding Collector
 
-Create a storage queue named `onboarding`. Test the Onboarding function by adding the following message to the onboarding queue in your storage account":
+Create a storage queue named `onboarding`. To test the Onboarding function, onboard this repository by adding the following message to the onboarding queue in your storage account:
 ```
 {
-    "OrganizationId": #####,
-    "OrganizationLogin": "xxxxx",
-    "RepositoryId": #####,
-    "RepositoryName": "xxxxx”,
+    "OrganizationId": 6154722,
+    "OrganizationLogin": "microsoft",
+    "RepositoryId": 282058629,
+    "RepositoryName": "CEDAR.GitHub.Collector”,
     "OnboardingType": "Repository",
     "IgnoreCache": true
 }
@@ -94,10 +88,10 @@ After the function has completed you should be able to see your collected data u
 Create a storage queue named `traffic`. Test the Traffic function by adding the following message to the traffic queue in your storage account:
 ```
 {
-    "OrganizationId": #####,
-    "OrganizationLogin": "xxxxx",
-    "RepositoryId": #####,
-    "RepositoryName": "xxxxx”
+    "OrganizationId": 6154722,
+    "OrganizationLogin": "microsoft",
+    "RepositoryId": 282058629,
+    "RepositoryName": "CEDAR.GitHub.Collector”
 }
 ```
 
