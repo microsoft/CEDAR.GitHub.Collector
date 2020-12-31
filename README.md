@@ -363,4 +363,9 @@ When your contributions have been tested you can commit them to your remote bran
  ```
  System.Private.CoreLib: The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. 
  ```
- If you are using the Azure web portal, check the box that says `Encode the message body in Base64`. If the box is unavailable to check, then the message body contains an illegal character and cannot be encode. Check to make sure that it is not an invisible character (copying and pasting from GitHub has caused an invisible illegal character in the past).
+ If you are using the Azure web portal, check the box that says `Encode the message body in Base64`. If the box is unavailable to check, then the message body contains an illegal character and cannot be encoded. Check to make sure that it is not an invisible character (copying and pasting from GitHub has caused an invisible illegal character in the past).
+
+ ```
+ Microsoft.CloudMine.GitHub.Collectors.Functions: Invalid URI: The hostname could not be parsed. 
+ ```
+ The API domain isn't set. Currently, it is set in `local.settings.json`. Make sure you have a value mapped to the key `ApiDomain` (Ex. `"ApiDomain": "api.github.com"`).
