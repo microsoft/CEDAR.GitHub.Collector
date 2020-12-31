@@ -35,7 +35,7 @@ Create a fork of this repository and open the GitHub.Collectors.sln solution fil
 ## 3. Create `local.settings.json`
 Create a `local.settings.json` file in the under the GitHub.Collectors.Functions project.
 
-Find the local.settings.template.json file and copy its contents into your new `local.settings.json` file.
+Find the file `local.settings.barebones.template.json` and copy its contents into your new `local.settings.json` file.
 
 Add your GitHub account username under the key “Identity”.
 
@@ -54,14 +54,14 @@ Add the Instrumentation key from this account into your `local.settings.json` fi
 ## 6. Create `Settings.json`
 Create a `Settings.json` file in the GitHub.Collectors.Functions project.
 
-Find the `Settings.template.json` file and copy its contents into your new `Settings.json` file.
+Find the file `Settings.barebones.template.json` and copy its contents into your new `Settings.json` file.
 
 Add your GitHub account username under the key “Identity”.
 
 ## 7. Upload `Settings.json`
 Create a `github-settings` Blob container in your Azure Storage account.
 
-Open the container and upload 'Settings.json'.
+Open the container and upload `Settings.json`.
 
 ## 8. Run the Azure Functions Locally with Visual Studio Code
 
