@@ -357,3 +357,10 @@ New code should be covered by comprehensive unit tests using the Microsoft.Visua
 
 ## 9. Commit and Push your changes and make a Pull Request
 When your contributions have been tested you can commit them to your remote branch and request that your changes be merged into the CEDAR.GitHub.Collector repository.
+
+
+# Troubleshooting
+ ```
+ System.Private.CoreLib: The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. 
+ ```
+ If you are using the Azure web portal, check the box that says `Encode the message body in Base64`. If the box is unavailable to check, then the message body contains an illegal character and cannot be encode. Check to make sure that it is not an invisible character (copying and pasting from GitHub has caused an invisible illegal character in the past).
