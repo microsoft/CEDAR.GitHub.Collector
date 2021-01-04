@@ -1,0 +1,26 @@
+{
+    "Authentication": {
+        "Type": "Basic",
+        "Identity": "<Username for your GitHub account>",
+        "PersonalAccessTokenEnvironmentVariable": "PersonalAccessToken"
+    },
+    "Storage": [
+        {
+            "Type": "AzureBlob",
+            "RootContainer": "github",
+            "OutputQueueName": "github"
+        }
+    ],
+    "Collectors": {
+
+        "Main": {},
+
+        "Delta": {},
+
+        "Onboarding": {},
+
+        "TrafficTimer": {},
+
+        "Traffic": {}
+    }
+}
