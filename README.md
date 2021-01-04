@@ -35,7 +35,7 @@ Create a fork of this repository and open the GitHub.Collectors.sln solution fil
 ## 3. Create `local.settings.json`
 Create a `local.settings.json` file in the under the GitHub.Collectors.Functions project.
 
-Find the local.settings.template.json file and copy its contents into your new `local.settings.json` file.
+Find the file `local.settings.barebones.template.json` and copy its contents into your new `local.settings.json` file.
 
 Add your GitHub account username under the key “Identity”.
 
@@ -54,14 +54,14 @@ Add the Instrumentation key from this account into your `local.settings.json` fi
 ## 6. Create `Settings.json`
 Create a `Settings.json` file in the GitHub.Collectors.Functions project.
 
-Find the `Settings.template.json` file and copy its contents into your new `Settings.json` file.
+Find the file `Settings.barebones.template.json` and copy its contents into your new `Settings.json` file.
 
 Add your GitHub account username under the key “Identity”.
 
 ## 7. Upload `Settings.json`
 Create a `github-settings` Blob container in your Azure Storage account.
 
-Open the container and upload 'Settings.json'.
+Open the container and upload `Settings.json`.
 
 ## 8. Run the Azure Functions Locally with Visual Studio Code
 
@@ -357,3 +357,15 @@ New code should be covered by comprehensive unit tests using the Microsoft.Visua
 
 ## 9. Commit and Push your changes and make a Pull Request
 When your contributions have been tested you can commit them to your remote branch and request that your changes be merged into the CEDAR.GitHub.Collector repository.
+
+
+# Troubleshooting
+ ```
+ System.Private.CoreLib: The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters. 
+ ```
+ If you are using the Azure web portal, check the box that says `Encode the message body in Base64`. If the box is unavailable to check, then the message body contains an illegal character and cannot be encoded. Check to make sure that it is not an invisible character (copying and pasting from GitHub has caused an invisible illegal character in the past).
+
+ ```
+ Microsoft.CloudMine.GitHub.Collectors.Functions: Invalid URI: The hostname could not be parsed. 
+ ```
+ The API domain isn't set. Currently, it is set in `local.settings.json`. Make sure you have a value mapped to the key `ApiDomain` (Ex. `"ApiDomain": "api.github.com"`).
