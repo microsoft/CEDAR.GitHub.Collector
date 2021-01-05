@@ -52,7 +52,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         {
             this.telemetryClient = new TelemetryClient(telemetryConfiguration);
             this.httpClient = httpClient;
-            this.apiDomain = Environment.GetEnvironmentVariable("ApiDomain");
+            this.apiDomain = configManager.GetApiDomain();
             this.adlsClient = adlsClient;
             this.configManager = configManager;
             this.configManager.SetTelemetryClient(this.telemetryClient);

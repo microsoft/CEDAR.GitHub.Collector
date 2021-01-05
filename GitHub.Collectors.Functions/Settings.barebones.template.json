@@ -22,5 +22,6 @@
         "TrafficTimer": {},
 
         "Traffic": {}
-    }
+    },
+    "ApiDomain":  "api.github.com"
 }
