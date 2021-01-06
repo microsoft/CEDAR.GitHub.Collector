@@ -90,5 +90,11 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             Assert.IsTrue(recordWriters[0] is AdlsBulkRecordWriter<FunctionContext>);
             Assert.IsTrue(recordWriters[1] is AzureBlobRecordWriter<FunctionContext>);
         }
+
+        [TestMethod]
+        public void GetApiDomain()
+        {
+            Assert.AreEqual("api.github.com", configManager.GetApiDomain());
+        }
     }
 }
