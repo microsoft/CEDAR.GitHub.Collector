@@ -12,9 +12,6 @@
         "FUNCTIONS_WORKER_RUNTIME": "dotnet",
         // Disable timer-triggered functions for local debugging. The functions can be selectively enabled when running locally.
         "AzureWebJobs.TrafficTimer.Disabled": "true",
-        "EventCountLimit": 100,
-
-        // This will be moved to the global config in the future.
-        "ApiDomain": "api.github.com"
+        "EventCountLimit": 100
     }
 }
