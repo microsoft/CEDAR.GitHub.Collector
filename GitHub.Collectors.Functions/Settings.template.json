@@ -1,0 +1,34 @@
+{
+  "Authentication": {
+    "Type": "Basic",
+    "Identity": "<GitHub identity>",
+    // Your local.settings.json (or function configuration if deployed to the cloud) should have a tuple that maps "PersonalAccessToken" to the actual PAT value:
+    // For example,
+    // "PersonalAccessToken": "<PAT value>"
+    "PersonalAccessTokenEnvironmentVariable": "PersonalAccessToken"
+  },
+  "Storage": [
+    {
+      "Type": "AzureDataLakeStorageV1",
+      "RootFolder": "GitHub"
+    },
+    {
+      "Type": "AzureBlob",
+      "RootContainer": "github",
+      "OutputQueueName": "github"
+    }
+  ],
+  "Collectors": {
+
+    "Main": {},
+
+    "Delta": {},
+
+    "Onboarding": {},
+
+    "TrafficTimer": {},
+
+    "Traffic": {}
+  },
+  "ApiDomain":  "api.github.com"
+}
