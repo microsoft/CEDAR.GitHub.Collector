@@ -25,6 +25,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
         private GitHubConfigManager configManager;
         private GitHubHttpClient httpClient;
         private ITelemetryClient telemetryClient;
+        private string apiDomain;
 
         [TestInitialize]
         public void Setup()
@@ -57,7 +58,8 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
                             'GitHubAppKeyUri' : 'https://dummyuri.com/'
                         },
                     }
-                }
+                },
+                'ApiDomain':  'api.github.com'
             }";
 
             this.configManager = new GitHubConfigManager(jsonInput);
@@ -71,7 +73,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             Assert.IsTrue(this.configManager.GetAuthentication("Main") is BasicAuthentication);
             
             string organization = "Organization";
-            string apiDomain = "ApiDomain";
+            string apiDomain = configManager.GetApiDomain();
             Assert.IsTrue(this.configManager.GetAuthentication(CollectorType.Onboarding, this.httpClient, organization, apiDomain) is GitHubAppAuthentication);
         }
 
@@ -87,6 +89,12 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             Assert.AreEqual(2, recordWriters.Count);
             Assert.IsTrue(recordWriters[0] is AdlsBulkRecordWriter<FunctionContext>);
             Assert.IsTrue(recordWriters[1] is AzureBlobRecordWriter<FunctionContext>);
+        }
+
+        [TestMethod]
+        public void GetApiDomain()
+        {
+            Assert.AreEqual("api.github.com", configManager.GetApiDomain());
         }
     }
 }
