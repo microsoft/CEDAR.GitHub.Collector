@@ -368,4 +368,4 @@ When your contributions have been tested you can commit them to your remote bran
  ```
  Microsoft.CloudMine.GitHub.Collectors.Functions: Invalid URI: The hostname could not be parsed. 
  ```
- The API domain isn't set. Currently, it is set in `local.settings.json`. Make sure you have a value mapped to the key `ApiDomain` (Ex. `"ApiDomain": "api.github.com"`).
+ The API domain isn't set. Currently, it is set in `Settings.json`. Make sure you have a value mapped to the key `ApiDomain` (Ex. `"ApiDomain": "api.github.com"`).
