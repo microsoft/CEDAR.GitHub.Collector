@@ -507,7 +507,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                             long repositoryId = record.SelectToken("$.id").Value<long>();
 
                             Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
-                            await trafficQueue.PutObjectAsJsonStringAsync(repository).ConfigureAwait(false);
+                            await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
                             return new List<RecordWithContext>();
                         },
                     };
