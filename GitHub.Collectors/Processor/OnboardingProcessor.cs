@@ -137,7 +137,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                         RepositoryName = repositoryName,
                         IgnoreCacheForApis = onboardingInput.IgnoreCacheForApis,
                     };
-                    await this.onboardingQueue.PutObjectAsJsonStringAsync(repositoryOnboardingInput).ConfigureAwait(false);
+                    await this.onboardingQueue.PutObjectAsJsonStringAsync(repositoryOnboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
                     return new List<RecordWithContext>();
                 },
             };
