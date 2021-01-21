@@ -8,12 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using System;
 using Microsoft.Azure.WebJobs.Host.Queues;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Queue;
-using System.Threading;
-using System.Globalization;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 
 [assembly: FunctionsStartup(typeof(Microsoft.CloudMine.GitHub.Collectors.Functions.ServiceStartup))]
