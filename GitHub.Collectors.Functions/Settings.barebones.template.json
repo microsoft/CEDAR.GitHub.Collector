@@ -1,27 +1,26 @@
 {
-    "Authentication": {
-        "Type": "Basic",
-        "Identity": "<Username for your GitHub account>",
-        "PersonalAccessTokenEnvironmentVariable": "PersonalAccessToken"
-    },
-    "Storage": [
-        {
-            "Type": "AzureBlob",
-            "RootContainer": "github",
-            "OutputQueueName": "github"
-        }
-    ],
-    "Collectors": {
+  "Authentication": {
+    "Type": "Basic",
+    "Identity": "<Username for your GitHub account>",
+    "PersonalAccessTokenEnvironmentVariable": "PersonalAccessToken"
+  },
+  "Storage": [
+  {
+    "Type": "AzureBlob",
+    "RootContainer": "github",
+    "OutputQueueName": "github"
+  }
+  ],
+  "Collectors": {
 
-        "Main": {},
+    "Main": {},
 
-        "Delta": {},
+    "Delta": {},
 
-        "Onboarding": {},
+    "Onboarding": {},
 
-        "TrafficTimer": {},
+    "TrafficTimer": {},
 
-        "Traffic": {}
-    },
-    "ApiDomain":  "api.github.com"
+    "Traffic": {}
+  }
 }

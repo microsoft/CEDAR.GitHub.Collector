@@ -19,10 +19,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            // Write startupcode here.
-            builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
-            builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
-            
+            // Write startupcode here.            
             string settings = null;
             string settingsPath = Environment.GetEnvironmentVariable("SettingsPath");
             if (string.IsNullOrWhiteSpace(settingsPath))
@@ -34,9 +31,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 settings = AzureHelpers.GetBlobContentAsync("github-settings", settingsPath).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
-            { 
+            {
             }
+            builder.Services.AddSingleton(settings);
             builder.Services.AddSingleton(new GitHubConfigManager(settings));
+            builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
+            builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
             builder.Services.AddSingleton<IQueueProcessorFactory, CustomQueueProcessorFactory>();
         }
     }
