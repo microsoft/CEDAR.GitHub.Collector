@@ -142,6 +142,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         private async Task<Tuple<bool, TimeSpan>> ShallRetryAsync(Exception requestException, string requestUrl, int exceptionCount, string identity)
         {
+            if (exceptionCount >= DelayBeforeRequestExceptions.Length)
+            {
+                // Out of retries.
+                return Tuple.Create(false, TimeSpan.Zero);
+            }
+
             bool shallRetry = false;
             TimeSpan delayBeforeRetry = TimeSpan.Zero;
 
