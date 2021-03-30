@@ -496,23 +496,35 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain);
                     CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>());
 
-                    GitHubCollectionNode repositoriesNode = new GitHubCollectionNode()
+                    try
                     {
-                        RecordType = DataContract.RepositoryInstanceRecordType,
-                        ApiName = DataContract.RepositoriesApiName,
-                        GetInitialUrl = additionalMetadata => OnboardingProcessor.InitialRepositoriesUrl(organizationLogin, this.apiDomain),
-                        ProcessRecordAsync = async record =>
+                        GitHubCollectionNode repositoriesNode = new GitHubCollectionNode()
                         {
-                            string repositoryName = record.SelectToken("$.name").Value<string>();
-                            long repositoryId = record.SelectToken("$.id").Value<long>();
+                            RecordType = DataContract.RepositoryInstanceRecordType,
+                            ApiName = DataContract.RepositoriesApiName,
+                            GetInitialUrl = additionalMetadata => OnboardingProcessor.InitialRepositoriesUrl(organizationLogin, this.apiDomain),
+                            ProcessRecordAsync = async record =>
+                            {
+                                string repositoryName = record.SelectToken("$.name").Value<string>();
+                                long repositoryId = record.SelectToken("$.id").Value<long>();
 
-                            Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
-                            await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
-                            return new List<RecordWithContext>();
-                        },
-                    };
+                                Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
+                                await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
+                                return new List<RecordWithContext>();
+                            },
+                        };
 
-                    await collector.ProcessAsync(repositoriesNode).ConfigureAwait(false);
+                        await collector.ProcessAsync(repositoriesNode).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // If we fail to do the repos/ call for an organization, don't let this stop collection for the rest.
+                        Dictionary<string, string> properties = new Dictionary<string, string>()
+                        {
+                            { "OrganizationLogin", organizationLogin },
+                        };
+                        telemetryClient.TrackException(ex, "Cannot initialize traffic collection.", properties);
+                    }
                 }
 
                 success = true;
