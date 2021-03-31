@@ -92,6 +92,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 throw new FatalException(errorMessage);
             }
             string eventType = eventTypeValues.First();
+            // Temporarily ignore processing secret_scanning_alert events since our collectors are failing because of the load.
+            if (eventType.Equals("secret_scanning_alert"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            }
 
             // The request does not have to go through the LogicApp. This might happen e.g., for local testing. Therefore, assume that Logic-App-related headers are optional:
             // X-LogicApp-Timestamp
