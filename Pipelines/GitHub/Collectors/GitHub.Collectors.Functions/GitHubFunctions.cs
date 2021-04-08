@@ -252,6 +252,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 { "FunctionStartDate", $"{context.FunctionStartDate:O}" },
                 { "CommitSha", commitSha },
                 { "InvocationId", context.InvocationId },
+                { "DequeueCount", context.DequeueCount.ToString() },
             };
         }
 
@@ -443,7 +444,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("TrafficTimer")]
         public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            return ExecuteTrafficCollector(executionContext, logger);
+            return ExecuteTrafficCollector(executionContext, logger, dequeueCount: 0);
         }
 
         /// <summary>
@@ -451,12 +452,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// https://developer.github.com/v3/repos/traffic/
         /// Also known as traffic collector trigger.
         [FunctionName("TrafficCollector")]
-        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger)
+        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            return ExecuteTrafficCollector(executionContext, logger);
+            return ExecuteTrafficCollector(executionContext, logger, dequeueCount);
         }
 
-        private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger)
+        private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -471,6 +472,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
+                DequeueCount = dequeueCount,
             };
 
             StatsTracker statsTracker = null;
@@ -551,7 +553,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as the traffic collector.
         /// </summary>
         [FunctionName("Traffic")]
-        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger)
+        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -570,6 +572,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
+                DequeueCount = dequeueCount,
             };
 
             StatsTracker statsTracker = null;
