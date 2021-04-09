@@ -11,7 +11,7 @@
       "enableDependencyTracking": false
     }
   },
-  "functionTimeout": "7.00:00:00",
+  "functionTimeout": "12:00:00",
   "extensions": {
     "queues": {
       "visibilityTimeout": "00:15:00",
