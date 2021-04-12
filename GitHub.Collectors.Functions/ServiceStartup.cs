@@ -34,7 +34,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             {
             }
             builder.Services.AddSingleton(settings);
-            builder.Services.AddSingleton(new GitHubConfigManager(settings));
+            builder.Services.AddSingleton<GitHubConfigManager>();
             builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
             builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
             builder.Services.AddSingleton<IQueueProcessorFactory, CustomQueueProcessorFactory>();
