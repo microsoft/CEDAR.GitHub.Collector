@@ -19,7 +19,6 @@
 
     "EventCountLimit": 100,
 
-    "AdlsIngestionApplicationId": "<ID of application with ADLS write permissions>",
     "AdlsIngestionApplicationSecret": "<Secret for application with ADLS write permissions>"
   }
 }

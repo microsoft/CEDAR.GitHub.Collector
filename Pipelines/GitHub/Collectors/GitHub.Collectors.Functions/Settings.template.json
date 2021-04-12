@@ -1,5 +1,10 @@
 {
   "Authentication": {
+    "AdlsIngestionApplicationId": "<ID of application with ADLS write permissions>",
+    // Your local.settings.json (or function configuration if deployed to the cloud) should have a tuple that maps "AdlsIngestionApplicationSecret" to the actual value:
+    // For example,
+    // "AdlsIngestionApplicationSecret": "<ADLS secret>"
+    "AdlsIngestionApplicationSecretEnvironmentVariable": "AdlsIngestionApplicationSecret",
     "Type": "Basic",
     "Identity": "<GitHub identity>",
     // Your local.settings.json (or function configuration if deployed to the cloud) should have a tuple that maps "PersonalAccessToken" to the actual PAT value:
@@ -10,7 +15,8 @@
   "Storage": [
     {
       "Type": "AzureDataLakeStorageV1",
-      "RootFolder": "GitHub"
+      "RootFolder": "GitHub",
+      "Version": "<ADLS version>"
     },
     {
       "Type": "AzureBlob",

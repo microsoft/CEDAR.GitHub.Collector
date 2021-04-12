@@ -25,13 +25,17 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
         private GitHubConfigManager configManager;
         private GitHubHttpClient httpClient;
         private ITelemetryClient telemetryClient;
+        private string jsonInput;
         private string apiDomain;
 
         [TestInitialize]
         public void Setup()
         {
-            string jsonInput = @"
+            this.jsonInput = @"
             {
+                'AdlsIngestionApplicationId': '',
+                'AdlsIngestionApplicationSecretEnvironmentVariable': 'AdlsIngestionApplicationSecret',
+                'ApiDomain':  'api.github.com',
                 'Authentication' : {
                     'Type' : 'Basic',
                     'Identity' : 'msftgits',
@@ -58,8 +62,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
                             'GitHubAppKeyUri' : 'https://dummyuri.com/'
                         },
                     }
-                },
-                'ApiDomain':  'api.github.com'
+                }
             }";
 
             this.configManager = new GitHubConfigManager(jsonInput);
@@ -84,7 +87,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             string identifier = "identifier";
             FunctionContext functionContext = new FunctionContext();
             FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
-            AdlsClientWrapper adlsClientWrapper = new AdlsClientWrapper();
+            AdlsClientWrapper adlsClientWrapper = new AdlsClientWrapper(this.jsonInput);
             List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter, adlsClientWrapper.AdlsClient);
             Assert.AreEqual(2, recordWriters.Count);
             Assert.IsTrue(recordWriters[0] is AdlsBulkRecordWriter<FunctionContext>);
