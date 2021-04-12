@@ -92,6 +92,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 throw new FatalException(errorMessage);
             }
             string eventType = eventTypeValues.First();
+            // Temporarily ignore processing secret_scanning_alert events since our collectors are failing because of the load.
+            if (eventType.Equals("secret_scanning_alert"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            }
 
             // The request does not have to go through the LogicApp. This might happen e.g., for local testing. Therefore, assume that Logic-App-related headers are optional:
             // X-LogicApp-Timestamp
@@ -247,6 +252,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 { "FunctionStartDate", $"{context.FunctionStartDate:O}" },
                 { "CommitSha", commitSha },
                 { "InvocationId", context.InvocationId },
+                { "DequeueCount", context.DequeueCount.ToString() },
             };
         }
 
@@ -438,7 +444,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("TrafficTimer")]
         public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            return ExecuteTrafficCollector(executionContext, logger);
+            return ExecuteTrafficCollector(executionContext, logger, dequeueCount: 0);
         }
 
         /// <summary>
@@ -446,12 +452,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// https://developer.github.com/v3/repos/traffic/
         /// Also known as traffic collector trigger.
         [FunctionName("TrafficCollector")]
-        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger)
+        public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            return ExecuteTrafficCollector(executionContext, logger);
+            return ExecuteTrafficCollector(executionContext, logger, dequeueCount);
         }
 
-        private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger)
+        private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -466,6 +472,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
+                DequeueCount = dequeueCount,
             };
 
             StatsTracker statsTracker = null;
@@ -496,23 +503,35 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain);
                     CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>());
 
-                    GitHubCollectionNode repositoriesNode = new GitHubCollectionNode()
+                    try
                     {
-                        RecordType = DataContract.RepositoryInstanceRecordType,
-                        ApiName = DataContract.RepositoriesApiName,
-                        GetInitialUrl = additionalMetadata => OnboardingProcessor.InitialRepositoriesUrl(organizationLogin, this.apiDomain),
-                        ProcessRecordAsync = async record =>
+                        GitHubCollectionNode repositoriesNode = new GitHubCollectionNode()
                         {
-                            string repositoryName = record.SelectToken("$.name").Value<string>();
-                            long repositoryId = record.SelectToken("$.id").Value<long>();
+                            RecordType = DataContract.RepositoryInstanceRecordType,
+                            ApiName = DataContract.RepositoriesApiName,
+                            GetInitialUrl = additionalMetadata => OnboardingProcessor.InitialRepositoriesUrl(organizationLogin, this.apiDomain),
+                            ProcessRecordAsync = async record =>
+                            {
+                                string repositoryName = record.SelectToken("$.name").Value<string>();
+                                long repositoryId = record.SelectToken("$.id").Value<long>();
 
-                            Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
-                            await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
-                            return new List<RecordWithContext>();
-                        },
-                    };
+                                Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
+                                await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
+                                return new List<RecordWithContext>();
+                            },
+                        };
 
-                    await collector.ProcessAsync(repositoriesNode).ConfigureAwait(false);
+                        await collector.ProcessAsync(repositoriesNode).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // If we fail to do the repos/ call for an organization, don't let this stop collection for the rest.
+                        Dictionary<string, string> properties = new Dictionary<string, string>()
+                        {
+                            { "OrganizationLogin", organizationLogin },
+                        };
+                        telemetryClient.TrackException(ex, "Cannot initialize traffic collection.", properties);
+                    }
                 }
 
                 success = true;
@@ -534,7 +553,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// Also known as the traffic collector.
         /// </summary>
         [FunctionName("Traffic")]
-        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger)
+        public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -553,6 +572,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
+                DequeueCount = dequeueCount,
             };
 
             StatsTracker statsTracker = null;

@@ -20,6 +20,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
     public class DefaultCollector : ICollector
     {
         public static readonly HttpResponseSignature UserNotFoundResponse = new HttpResponseSignature(HttpStatusCode.NotFound, "Not Found");
+        public static readonly HttpResponseSignature ResourceNotAccessibleByIntegrationResponse = new HttpResponseSignature(HttpStatusCode.Forbidden, "Resource not accessible by integration");
 
         public const string OrganizationInstanceRecordType = "GitHub.OrgIstance";
         public const string UserInstanceRecordType = "GitHub.UserInstance";
@@ -60,9 +61,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             {
                 string senderUrl = senderUrlToken.Value<string>();
                 // There are cases where we receive this payload for removed team members, members no longer exist in GitHub. Therefore, the following call can fail with 404 not found.
+                // When using a GitHub app, the same request fails with 403: "Resource not accessible by integration" response.
                 List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
                 {
                     UserNotFoundResponse,
+                    ResourceNotAccessibleByIntegrationResponse,
                 };
                 await this.ProcessUrlAsync(senderUrl, UserInstanceRecordType, allowlistedResponses).ConfigureAwait(false);
             }
