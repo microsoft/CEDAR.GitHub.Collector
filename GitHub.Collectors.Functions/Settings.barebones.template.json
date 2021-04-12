@@ -1,16 +1,20 @@
 {
+  "ApiDomain": "<Api Domain for GitHub e.g., api.github.com>",
+
   "Authentication": {
     "Type": "Basic",
     "Identity": "<Username for your GitHub account>",
     "PersonalAccessTokenEnvironmentVariable": "PersonalAccessToken"
   },
+
   "Storage": [
-  {
-    "Type": "AzureBlob",
-    "RootContainer": "github",
-    "OutputQueueName": "github"
-  }
+    {
+      "Type": "AzureBlob",
+      "RootContainer": "github",
+      "OutputQueueName": "github"
+    }
   ],
+
   "Collectors": {
 
     "Main": {},
