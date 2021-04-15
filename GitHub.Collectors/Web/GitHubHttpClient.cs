@@ -15,6 +15,7 @@ using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Web
@@ -265,17 +266,16 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             try
             {
                 JObject responseContentObject = JObject.Parse(responseContent);
-                string message = responseContentObject.SelectToken("$.message").Value<string>();
 
                 foreach (HttpResponseSignature allowlistedResponse in allowlistedResponses)
                 {
-                    if (allowlistedResponse.statusCode == responseStatusCode && allowlistedResponse.Matches(responseStatusCode, message))
+                    if (allowlistedResponse.Matches(responseStatusCode, responseContentObject))
                     {
                         Dictionary<string, string> allowlistedResponseProperties = new Dictionary<string, string>()
                         {
                             { "RequestUrl", requestUrl },
                             { "ResponseStatusCode", responseStatusCode.ToString() },
-                            { "ResponseMessage", message },
+                            { "ResponseContent", responseContentObject.ToString(Formatting.None) },
                         };
                         this.telemetryClient.TrackEvent("AllowlistedResponse", allowlistedResponseProperties);
 
