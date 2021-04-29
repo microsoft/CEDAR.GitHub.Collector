@@ -20,8 +20,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         private readonly IHttpClient httpClient;
         private readonly double maxUsageBeforeDelayStarts;
 
+        /// <summary>
+        /// GitHub rate-limiting is very simple (a single-dimensional number) and gets changed immediately after a request is done.
+        /// Therefore, lookup the current value before each request.
+        /// </summary>
+        private static readonly TimeSpan CacheInvalidationFrequency = TimeSpan.FromTicks(0);
+
         public GitHubRateLimiter(string organizationId, ICache<RateLimitTableEntity> rateLimiterCache, IHttpClient httpClient, ITelemetryClient telemetryClient, double maxUsageBeforeDelayStarts, string apiDomain)
-            : base(RateLimitTableEntity.GlobalOrganizationId, organizationName: organizationId.Equals(RateLimitTableEntity.GlobalOrganizationId) ? string.Empty : organizationId, rateLimiterCache, telemetryClient, expectRateLimitingHeaders: true)
+            : base(RateLimitTableEntity.GlobalOrganizationId, organizationName: organizationId.Equals(RateLimitTableEntity.GlobalOrganizationId) ? string.Empty : organizationId, rateLimiterCache, telemetryClient, expectRateLimitingHeaders: true, CacheInvalidationFrequency)
         {
             this.httpClient = httpClient;
             this.maxUsageBeforeDelayStarts = maxUsageBeforeDelayStarts;
