@@ -14,11 +14,13 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
     public class GitHubConfigManager : ConfigManager
     {
         private readonly JToken apiDomainToken;
+        private readonly JToken collectorIdentityToken;
 
         public GitHubConfigManager(string jsonString, IConfigValueResolver configResolver = null)
             : base(jsonString, configResolver)
         {
             this.apiDomainToken = base.config.SelectToken("ApiDomain");
+            this.collectorIdentityToken = base.config.SelectToken("CollectorIdentity");
         }
 
         public IAuthentication GetAuthentication(CollectorType collectorType, GitHubHttpClient httpClient, string organization, string apiDomain)
@@ -82,7 +84,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
 
         public string GetCollectorIdentity()
         {
-            ValidateSettingsExist();
+ 
             string collectorIdentity = string.Empty;
             try
             {
@@ -90,7 +92,6 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
             }
             catch (Exception)
             {
-                throw new FatalTerminalException($"Collector Identity must be provided in Settings.json");
             }
             return collectorIdentity;
         }
