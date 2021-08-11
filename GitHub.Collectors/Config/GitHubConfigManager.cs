@@ -79,6 +79,21 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
             }
             return apiDomain;
         }
+
+        public string GetCollectorIdentity()
+        {
+            ValidateSettingsExist();
+            string collectorIdentity = string.Empty;
+            try
+            {
+                collectorIdentity = this.collectorIdentityToken.Value<string>();
+            }
+            catch (Exception)
+            {
+                throw new FatalTerminalException($"Collector Identity must be provided in Settings.json");
+            }
+            return collectorIdentity;
+        }
     }
 }
 
