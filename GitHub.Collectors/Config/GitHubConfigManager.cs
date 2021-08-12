@@ -14,13 +14,11 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
     public class GitHubConfigManager : ConfigManager
     {
         private readonly JToken apiDomainToken;
-        private readonly JToken collectorIdentityToken;
 
         public GitHubConfigManager(string jsonString, IConfigValueResolver configResolver = null)
             : base(jsonString, configResolver)
         {
             this.apiDomainToken = base.config.SelectToken("ApiDomain");
-            this.collectorIdentityToken = base.config.SelectToken("CollectorIdentity");
         }
 
         public IAuthentication GetAuthentication(CollectorType collectorType, GitHubHttpClient httpClient, string organization, string apiDomain)
@@ -80,20 +78,6 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
                 throw new FatalTerminalException($"Invalid URI: The hostname could not be parsed for API domain {apiDomainToken}. The API domain must be provided in Settings.json.");
             }
             return apiDomain;
-        }
-
-        public string GetCollectorIdentity()
-        {
- 
-            string collectorIdentity = string.Empty;
-            try
-            {
-                collectorIdentity = this.collectorIdentityToken.Value<string>();
-            }
-            catch (Exception)
-            {
-            }
-            return collectorIdentity;
         }
     }
 }
