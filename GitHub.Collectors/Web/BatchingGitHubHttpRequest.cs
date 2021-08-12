@@ -23,6 +23,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public bool HasNext { get; private set; }
         public string CurrentUrl { get; private set; }
         public string PreviousUrl { get; private set; }
+        public string PreviousIdentity { get; private set; }
 
         public BatchingGitHubHttpRequest(GitHubHttpClient httpClient, string initialUrl, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
@@ -33,6 +34,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             this.HasNext = true;
             this.CurrentUrl = initialUrl;
             this.PreviousUrl = null;
+            this.PreviousIdentity = null;
         }
 
         public async Task<HttpResponseMessage> NextResponseAsync(IAuthentication authentication)
@@ -45,6 +47,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             HttpResponseMessage response = await this.httpClient.GetAsync(this.CurrentUrl, authentication, this.apiName, this.allowlistedResponses).ConfigureAwait(false);
             this.HasNext = false;
             this.PreviousUrl = this.CurrentUrl;
+            this.PreviousIdentity = authentication.Identity;
 
             if (response.Headers.TryGetValues("Link", out IEnumerable<string> linkValues))
             {
