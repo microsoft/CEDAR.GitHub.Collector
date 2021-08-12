@@ -150,6 +150,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             OrchestrationContext context = durableContext.GetInput<OrchestrationContext>();
             string requestBody = context.RequestBody;
             WebhookProcessorContext functionContext = context.Downgrade();
+            functionContext.CollectorIdentity = this.configManager.GetCollectorIdentity();
             WebhookProcessorContextWriter contextWriter = new WebhookProcessorContextWriter();
 
             JObject record = JObject.Parse(requestBody);
@@ -292,6 +293,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Delta.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -370,6 +372,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Onboarding.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -469,6 +472,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.TrafficTimer.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -569,6 +573,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Traffic.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
