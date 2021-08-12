@@ -6,10 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors", "GitHub.Collectors\GitHub.Collectors.csproj", "{E7ECED10-0914-45F9-8188-923015656C98}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Tests", "GitHub.Collectors.Tests\GitHub.Collectors.Tests.csproj", "{C07D8599-82E2-46EB-B867-114371D8078C}"
-	ProjectSection(ProjectDependencies) = postProject
-		{577CF5A9-3961-4C14-BE38-708B2E9F3B08} = {577CF5A9-3961-4C14-BE38-708B2E9F3B08}
-		{1337C1AC-AA01-4854-B4DC-9A78D3D3880D} = {1337C1AC-AA01-4854-B4DC-9A78D3D3880D}
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BCABE3D1-BA81-4C42-95FD-9FDAA3D244A5}"
 	ProjectSection(SolutionItems) = preProject
