@@ -73,8 +73,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         public async Task<Dictionary<string, string>> ProcessAsync()
         {
             JObject record = JObject.Parse(this.requestBody);
+
             // remove app id installation info from record to maintain consistant data shape
-            record.SelectToken("$.installation").Remove();
+            JToken installationToken = record.SelectToken("$.installation");
+            if (installationToken != null)
+            {
+                installationToken.Remove();
+;           }
 
             // Some events e.g., "member_added", does not have "repository" as part of the Webhooks payload since they are only associated with the
             // organization and not with a specific repository. Use defaults (0 and empty string) for repository id and repository name since they are optional.
