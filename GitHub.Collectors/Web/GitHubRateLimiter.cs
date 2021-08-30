@@ -36,10 +36,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         protected override async Task WaitIfNeededAsync(IAuthentication authentication, RateLimitTableEntity tableEntity)
         {
-            long rateLimitLimit = tableEntity.RateLimitLimit;
-            long rateLimitRemaining = tableEntity.RateLimitRemaining;
-            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
-
             DateTime? retryAfter = tableEntity.RetryAfter;
             // Honor retry-after if exists.
             if (retryAfter.HasValue)
@@ -61,6 +57,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 }
             }
 
+            long rateLimitLimit = tableEntity.RateLimitLimit;
+            long rateLimitRemaining = tableEntity.RateLimitRemaining;
+            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
             if (usage > this.maxUsageBeforeDelayStarts)
             {
                 TimeSpan maxDelay = tableEntity.RateLimitReset.Value.Subtract(DateTime.UtcNow);
@@ -79,6 +78,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 await this.UpdateStatsAsync(authentication.Identity, requestUrl: usageCheckUrl, usageCheckResponse).ConfigureAwait(false);
                 await this.WaitIfNeededAsync(authentication);
             }
+        }
+
+        public async override Task<DateTime> TimeToExecute(IAuthentication authentication)
+        {
+            RateLimitTableEntity tableEntity = await this.GetTableEntity(authentication).ConfigureAwait(false);
+            long rateLimitLimit = tableEntity.RateLimitLimit;
+            long rateLimitRemaining = tableEntity.RateLimitRemaining;
+            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
+            if (usage <= this.maxUsageBeforeDelayStarts)
+            {
+                return DateTime.UtcNow;
+            }
+            return tableEntity.RateLimitReset.Value;
         }
     }
 }

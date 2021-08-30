@@ -24,6 +24,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Processor;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -401,6 +402,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
 
+                DateTime executionTime = await rateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
+                if (executionTime > DateTime.UtcNow)
+                {
+                    TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);
+                    await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hideTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                    throw new Exception("Rate Limit Met, queue item requeued and hidden until rate limit reset");
+                }
+
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
@@ -596,6 +605,15 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Traffic, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
+
+                DateTime executionTime = await rateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
+                if (executionTime > DateTime.UtcNow)
+                {
+                    TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);
+                    CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
+                    await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hideTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                    throw new Exception("Rate Limit Met, queue item requed and hidden until rate limit reset");
+                }
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
