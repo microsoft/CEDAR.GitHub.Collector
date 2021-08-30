@@ -83,6 +83,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public async override Task<DateTime> TimeToExecute(IAuthentication authentication)
         {
             RateLimitTableEntity tableEntity = await this.GetTableEntity(authentication).ConfigureAwait(false);
+            if (tableEntity == null)
+            {
+                return DateTime.UtcNow;
+            }
             long rateLimitLimit = tableEntity.RateLimitLimit;
             long rateLimitRemaining = tableEntity.RateLimitRemaining;
             double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
