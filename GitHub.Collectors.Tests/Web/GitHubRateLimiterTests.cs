@@ -51,6 +51,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
             try
             {
                 await this.gitHubRateLimiter.ExposedWaitIfNeededAsync(auth, tableEntity);
+                Assert.Fail();
             }
             catch (Exception exception)
             {
