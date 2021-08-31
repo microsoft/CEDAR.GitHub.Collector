@@ -392,7 +392,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain, true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -401,15 +401,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
-
-                GitHubRateLimiter ghRateLimiter = (GitHubRateLimiter)rateLimiter;
-                DateTime executionTime = await ghRateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
-                if (executionTime > DateTime.UtcNow)
-                {
-                    TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);
-                    await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hideTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                    throw new Exception("Rate Limit Met, queue item requeued and hidden until rate limit reset");
-                }
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
@@ -436,6 +427,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
                 outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
+            }
+            catch (Exception exception) when (exception.Message.Equals("RateLimitRequeue"))
+            {
+                CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
+                TimeSpan hiddenTime = (TimeSpan) exception.Data["RequeueHideTime"];
+                await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
@@ -600,22 +598,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 70.0, this.apiDomain);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 70.0, this.apiDomain, true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Traffic, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
-
-                GitHubRateLimiter ghRateLimiter = (GitHubRateLimiter)rateLimiter;
-                DateTime executionTime = await ghRateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
-                if (executionTime > DateTime.UtcNow)
-                {
-                    TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);
-                    CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
-                    await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hideTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                    throw new Exception("Rate Limit Met, queue item requed and hidden until rate limit reset");
-                }
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
@@ -642,6 +630,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
                 outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
+            }
+            catch (Exception exception) when (exception.Message.Equals("RateLimitRequeue"))
+            {
+                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
+                TimeSpan hiddenTime = (TimeSpan)exception.Data["RequeueHideTime"];
+                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
             {

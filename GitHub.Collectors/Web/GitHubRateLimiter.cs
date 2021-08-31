@@ -19,19 +19,20 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         private readonly IHttpClient httpClient;
         private readonly double maxUsageBeforeDelayStarts;
-
+        private readonly bool throwOnRateLimit;
         /// <summary>
         /// GitHub rate-limiting is very simple (a single-dimensional number) and gets changed immediately after a request is done.
         /// Therefore, lookup the current value before each request.
         /// </summary>
         private static readonly TimeSpan CacheInvalidationFrequency = TimeSpan.FromTicks(0);
 
-        public GitHubRateLimiter(string organizationId, ICache<RateLimitTableEntity> rateLimiterCache, IHttpClient httpClient, ITelemetryClient telemetryClient, double maxUsageBeforeDelayStarts, string apiDomain)
+        public GitHubRateLimiter(string organizationId, ICache<RateLimitTableEntity> rateLimiterCache, IHttpClient httpClient, ITelemetryClient telemetryClient, double maxUsageBeforeDelayStarts, string apiDomain, bool throwOnRateLimit = false)
             : base(RateLimitTableEntity.GlobalOrganizationId, organizationName: organizationId.Equals(RateLimitTableEntity.GlobalOrganizationId) ? string.Empty : organizationId, rateLimiterCache, telemetryClient, expectRateLimitingHeaders: true, CacheInvalidationFrequency)
         {
             this.httpClient = httpClient;
             this.maxUsageBeforeDelayStarts = maxUsageBeforeDelayStarts;
             this.usageCheckUrl = $"https://{apiDomain}/rate_limit";
+            this.throwOnRateLimit = throwOnRateLimit;
         }
 
         protected override async Task WaitIfNeededAsync(IAuthentication authentication, RateLimitTableEntity tableEntity)
@@ -50,6 +51,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                     };
                     this.TelemetryClient.TrackEvent("RateLimiterDelay", properties);
 
+                    if (this.throwOnRateLimit)
+                    {
+                        Exception e = new Exception("RateLimitRequeue");
+                        e.Data.Add("RequeueHideTime", delay);
+                        throw e;
+                    }
                     await Task.Delay(delay).ConfigureAwait(false);
                     await this.WaitIfNeededAsync(authentication);
 
@@ -62,6 +69,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
             if (usage > this.maxUsageBeforeDelayStarts)
             {
+
                 TimeSpan maxDelay = tableEntity.RateLimitReset.Value.Subtract(DateTime.UtcNow);
                 Dictionary<string, string> properties = new Dictionary<string, string>()
                 {
@@ -72,29 +80,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 };
                 this.TelemetryClient.TrackEvent("RateLimiterDelay", properties);
 
+                if (this.throwOnRateLimit)
+                {
+                    Exception e = new Exception("RateLimitRequeue");
+                    e.Data.Add("RequeueHideTime", maxDelay);
+                    throw e;
+                }
+
                 await Task.Delay(DelayWhileCheckingUsage).ConfigureAwait(false);
 
                 HttpResponseMessage usageCheckResponse = await this.httpClient.GetAsync(usageCheckUrl, authentication, GitHubHttpClient.GitHubProductInfoHeaderValue).ConfigureAwait(false);
                 await this.UpdateStatsAsync(authentication.Identity, requestUrl: usageCheckUrl, usageCheckResponse).ConfigureAwait(false);
                 await this.WaitIfNeededAsync(authentication);
             }
-        }
-
-        public async Task<DateTime> TimeToExecute(IAuthentication authentication)
-        {
-            RateLimitTableEntity tableEntity = await this.GetTableEntity(authentication).ConfigureAwait(false);
-            if (tableEntity == null)
-            {
-                return DateTime.UtcNow;
-            }
-            long rateLimitLimit = tableEntity.RateLimitLimit;
-            long rateLimitRemaining = tableEntity.RateLimitRemaining;
-            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
-            if (usage <= this.maxUsageBeforeDelayStarts)
-            {
-                return DateTime.UtcNow;
-            }
-            return tableEntity.RateLimitReset.Value;
         }
     }
 }
