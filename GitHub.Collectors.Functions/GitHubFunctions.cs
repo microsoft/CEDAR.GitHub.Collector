@@ -433,6 +433,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 TimeSpan hiddenTime = (TimeSpan) exception.Data["RequeueHideTime"];
                 await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                telemetryClient.TrackException(exception, "Rate Limit");
                 throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
@@ -636,6 +637,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
                 TimeSpan hiddenTime = (TimeSpan)exception.Data["RequeueHideTime"];
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                telemetryClient.TrackException(exception, "Rate Limit");
                 throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))

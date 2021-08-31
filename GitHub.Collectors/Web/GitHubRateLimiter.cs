@@ -20,6 +20,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         private readonly IHttpClient httpClient;
         private readonly double maxUsageBeforeDelayStarts;
         private readonly bool throwOnRateLimit;
+
         /// <summary>
         /// GitHub rate-limiting is very simple (a single-dimensional number) and gets changed immediately after a request is done.
         /// Therefore, lookup the current value before each request.
@@ -69,7 +70,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
             if (usage > this.maxUsageBeforeDelayStarts)
             {
-
                 TimeSpan maxDelay = tableEntity.RateLimitReset.Value.Subtract(DateTime.UtcNow);
                 Dictionary<string, string> properties = new Dictionary<string, string>()
                 {
