@@ -402,7 +402,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
 
-                DateTime executionTime = await rateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
+                GitHubRateLimiter ghRateLimiter = (GitHubRateLimiter)rateLimiter;
+                DateTime executionTime = await ghRateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
                 if (executionTime > DateTime.UtcNow)
                 {
                     TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);
@@ -606,7 +607,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Traffic, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
 
-                DateTime executionTime = await rateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
+                GitHubRateLimiter ghRateLimiter = (GitHubRateLimiter)rateLimiter;
+                DateTime executionTime = await ghRateLimiter.TimeToExecute(authentication).ConfigureAwait(false);
                 if (executionTime > DateTime.UtcNow)
                 {
                     TimeSpan hideTime = executionTime.Subtract(DateTime.UtcNow);

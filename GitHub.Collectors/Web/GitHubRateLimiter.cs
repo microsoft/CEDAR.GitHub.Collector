@@ -80,7 +80,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             }
         }
 
-        public async override Task<DateTime> TimeToExecute(IAuthentication authentication)
+        public async Task<DateTime> TimeToExecute(IAuthentication authentication)
         {
             RateLimitTableEntity tableEntity = await this.GetTableEntity(authentication).ConfigureAwait(false);
             if (tableEntity == null)
