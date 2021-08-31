@@ -29,9 +29,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
     [TestClass]
     public class GitHubRateLimiterTests
     {
-
         private GitHubRateLimiterTestClass gitHubRateLimiter;
-
 
         [TestInitialize]
         public void Setup()
@@ -39,7 +37,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
             ICache<RateLimitTableEntity> cache = new NoopCache<RateLimitTableEntity>();
             IHttpClient httpClient = new FixedHttpClient();
             ITelemetryClient telemetryClient = new NoopTelemetryClient();
-            this.gitHubRateLimiter = new GitHubRateLimiterTestClass("organizationId", cache, httpClient, telemetryClient, 90, "apidomain", true);
+            this.gitHubRateLimiter = new GitHubRateLimiterTestClass("organizationId", cache, httpClient, telemetryClient, 90, "apidomain", throwOnRateLimit : true);
         }
 
         [TestMethod]
@@ -53,11 +51,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
                 await this.gitHubRateLimiter.ExposedWaitIfNeededAsync(auth, tableEntity);
                 Assert.Fail();
             }
-            catch (Exception exception)
+            catch (GitHubRateLimitException exception)
             {
                 Assert.AreEqual("RateLimitRequeue", exception.Message);
-                Assert.IsTrue((TimeSpan) exception.Data["RequeueHideTime"] < TimeSpan.FromSeconds(11));
-                Assert.IsTrue((TimeSpan) exception.Data["RequeueHideTime"] > TimeSpan.FromSeconds(9));
+                Assert.IsTrue((TimeSpan) exception.getHiddenTime() < TimeSpan.FromSeconds(11));
+                Assert.IsTrue((TimeSpan) exception.getHiddenTime() > TimeSpan.FromSeconds(9));
             }
 
             tableEntity = new RateLimitTableEntity("identity", "organizationId", "organizationName", 100, 90, rateLimitReset, null);

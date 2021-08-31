@@ -392,7 +392,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain, true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain, throwOnRateLimit : true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -428,12 +428,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
             }
-            catch (Exception exception) when (exception.Message.Equals("RateLimitRequeue"))
+            catch (GitHubRateLimitException exception)
             {
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
-                TimeSpan hiddenTime = (TimeSpan) exception.Data["RequeueHideTime"];
+                TimeSpan hiddenTime = exception.getHiddenTime();
                 await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                telemetryClient.TrackException(exception, "Rate Limit");
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
                 throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
@@ -599,7 +599,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 70.0, this.apiDomain, true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 70.0, this.apiDomain, throwOnRateLimit : true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -632,12 +632,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
             }
-            catch (Exception exception) when (exception.Message.Equals("RateLimitRequeue"))
+            catch (GitHubRateLimitException exception)
             {
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
-                TimeSpan hiddenTime = (TimeSpan)exception.Data["RequeueHideTime"];
+                TimeSpan hiddenTime = exception.getHiddenTime();
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                telemetryClient.TrackException(exception, "Rate Limit");
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
                 throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))

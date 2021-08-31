@@ -54,9 +54,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
                     if (this.throwOnRateLimit)
                     {
-                        Exception e = new Exception("RateLimitRequeue");
-                        e.Data.Add("RequeueHideTime", delay);
-                        throw e;
+                        throw new GitHubRateLimitException(delay);
                     }
                     await Task.Delay(delay).ConfigureAwait(false);
                     await this.WaitIfNeededAsync(authentication);
@@ -82,9 +80,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
                 if (this.throwOnRateLimit)
                 {
-                    Exception e = new Exception("RateLimitRequeue");
-                    e.Data.Add("RequeueHideTime", maxDelay);
-                    throw e;
+                    throw new GitHubRateLimitException(maxDelay);
                 }
 
                 await Task.Delay(DelayWhileCheckingUsage).ConfigureAwait(false);
