@@ -431,10 +431,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
-                TimeSpan hiddenTime = exception.getHiddenTime();
-                await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? timeToLive = null;
+                await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
-                throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
@@ -635,10 +635,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
-                TimeSpan hiddenTime = exception.getHiddenTime();
-                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, hiddenTime, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? timeToLive = null;
+                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
-                throw exception;
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
