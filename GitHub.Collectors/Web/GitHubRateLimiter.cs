@@ -19,6 +19,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
 
         private readonly IHttpClient httpClient;
         private readonly double maxUsageBeforeDelayStarts;
+        private readonly bool throwOnRateLimit;
 
         /// <summary>
         /// GitHub rate-limiting is very simple (a single-dimensional number) and gets changed immediately after a request is done.
@@ -26,20 +27,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         /// </summary>
         private static readonly TimeSpan CacheInvalidationFrequency = TimeSpan.FromTicks(0);
 
-        public GitHubRateLimiter(string organizationId, ICache<RateLimitTableEntity> rateLimiterCache, IHttpClient httpClient, ITelemetryClient telemetryClient, double maxUsageBeforeDelayStarts, string apiDomain)
+        public GitHubRateLimiter(string organizationId, ICache<RateLimitTableEntity> rateLimiterCache, IHttpClient httpClient, ITelemetryClient telemetryClient, double maxUsageBeforeDelayStarts, string apiDomain, bool throwOnRateLimit = false)
             : base(RateLimitTableEntity.GlobalOrganizationId, organizationName: organizationId.Equals(RateLimitTableEntity.GlobalOrganizationId) ? string.Empty : organizationId, rateLimiterCache, telemetryClient, expectRateLimitingHeaders: true, CacheInvalidationFrequency)
         {
             this.httpClient = httpClient;
             this.maxUsageBeforeDelayStarts = maxUsageBeforeDelayStarts;
             this.usageCheckUrl = $"https://{apiDomain}/rate_limit";
+            this.throwOnRateLimit = throwOnRateLimit;
         }
 
         protected override async Task WaitIfNeededAsync(IAuthentication authentication, RateLimitTableEntity tableEntity)
         {
-            long rateLimitLimit = tableEntity.RateLimitLimit;
-            long rateLimitRemaining = tableEntity.RateLimitRemaining;
-            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
-
             DateTime? retryAfter = tableEntity.RetryAfter;
             // Honor retry-after if exists.
             if (retryAfter.HasValue)
@@ -54,6 +52,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                     };
                     this.TelemetryClient.TrackEvent("RateLimiterDelay", properties);
 
+                    if (this.throwOnRateLimit)
+                    {
+                        throw new GitHubRateLimitException(delay);
+                    }
                     await Task.Delay(delay).ConfigureAwait(false);
                     await this.WaitIfNeededAsync(authentication);
 
@@ -61,6 +63,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 }
             }
 
+            long rateLimitLimit = tableEntity.RateLimitLimit;
+            long rateLimitRemaining = tableEntity.RateLimitRemaining;
+            double usage = 100.0 - rateLimitRemaining * 100.0 / rateLimitLimit;
             if (usage > this.maxUsageBeforeDelayStarts)
             {
                 TimeSpan maxDelay = tableEntity.RateLimitReset.Value.Subtract(DateTime.UtcNow);
@@ -72,6 +77,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                     { "Reason", "Usage Threshold" },
                 };
                 this.TelemetryClient.TrackEvent("RateLimiterDelay", properties);
+
+                if (this.throwOnRateLimit)
+                {
+                    throw new GitHubRateLimitException(maxDelay);
+                }
 
                 await Task.Delay(DelayWhileCheckingUsage).ConfigureAwait(false);
 
