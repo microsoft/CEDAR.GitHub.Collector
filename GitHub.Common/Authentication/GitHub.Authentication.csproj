@@ -1,15 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>Microsoft.CloudMine.GitHub.Collectors</AssemblyName>
-    <RootNamespace>Microsoft.CloudMine.GitHub.Collectors</RootNamespace>
+    <AssemblyName>Microsoft.CloudMine.GitHub.Authentication</AssemblyName>
+    <RootNamespace>Microsoft.CloudMine.GitHub.Authentication</RootNamespace>
     <InformationalVersion>$(Build_BuildNumber)</InformationalVersion>
     <SourceRevisionId>$(Build_SourceVersion)</SourceRevisionId>
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
-    <ProjectReference Include="..\GitHub.Common\GitHub.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="local.settings.json">

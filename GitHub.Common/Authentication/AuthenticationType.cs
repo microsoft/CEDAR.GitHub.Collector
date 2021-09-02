@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
+namespace Microsoft.CloudMine.GitHub.Authentication
 {
     public enum AuthenticationType
     {

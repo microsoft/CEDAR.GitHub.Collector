@@ -7,6 +7,7 @@ using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using Microsoft.CloudMine.GitHub.Web;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net.Http;

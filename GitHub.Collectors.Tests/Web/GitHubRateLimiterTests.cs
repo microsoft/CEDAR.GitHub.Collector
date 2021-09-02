@@ -5,6 +5,7 @@ using Microsoft.CloudMine.Core.Collectors.Tests.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Web;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Tests.Helpers;
+using Microsoft.CloudMine.GitHub.Web;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;

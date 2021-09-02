@@ -9,7 +9,7 @@ using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Web;
 using Microsoft.CloudMine.Core.Collectors.Web;
-using Microsoft.CloudMine.GitHub.Collectors.Authentication;
+using Microsoft.CloudMine.GitHub.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Tests.Helpers;

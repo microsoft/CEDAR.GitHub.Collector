@@ -10,13 +10,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace Microsoft.CloudMine.GitHub.Collectors.Web
+namespace Microsoft.CloudMine.GitHub.Web
 {
     public class BatchingGitHubHttpRequest : IBatchingHttpRequest
     {
         private static readonly string RelNext = $"rel=\"next\"";
 
-        private readonly GitHubHttpClient httpClient;
+        private readonly GitHubHttpClientBase httpClient;
         private readonly string apiName;
         private readonly List<HttpResponseSignature> allowlistedResponses;
 
@@ -25,7 +25,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public string PreviousUrl { get; private set; }
         public string PreviousIdentity { get; private set; }
 
-        public BatchingGitHubHttpRequest(GitHubHttpClient httpClient, string initialUrl, string apiName, List<HttpResponseSignature> allowlistedResponses)
+        public BatchingGitHubHttpRequest(GitHubHttpClientBase httpClient, string initialUrl, string apiName, List<HttpResponseSignature> allowlistedResponses)
         {
             this.httpClient = httpClient;
             this.apiName = apiName;

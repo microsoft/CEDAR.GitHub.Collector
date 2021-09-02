@@ -3,7 +3,7 @@
 
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Error;
-using Microsoft.CloudMine.GitHub.Collectors.Authentication;
+using Microsoft.CloudMine.GitHub.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;

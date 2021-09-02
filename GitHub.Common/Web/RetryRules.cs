@@ -8,7 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Microsoft.CloudMine.GitHub.Collectors.Web
+namespace Microsoft.CloudMine.GitHub.Web
 {
     public static class RetryRules
     {

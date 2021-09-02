@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 
-namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
+namespace Microsoft.CloudMine.GitHub.Telemetry
 {
     public class GitHubApplicationInsightsTelemetryClient : ApplicationInsightsTelemetryClient
     {
