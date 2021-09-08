@@ -5,10 +5,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
     public class DataContract
     {
+        public const string OrganizationInstanceRecordType = "???",
+        public const string UserInstanceRecordType = "GitHub.UserInstance???",
+
         public const string TeamMemberInstanceRecordType = "GitHub.Teams.MemberInstance";
         public const string TeamInstanceRecordType = "GitHub.Orgs.TeamInstance";
         public const string TeamRepositoryInstanceRecordType = "GitHub.Teams.RepositoryInstance";
         public const string RepositoryInstanceRecordType = "GitHub.Orgs.RepoInstance";
+        public const string RepositoryTimelineInstanceRecordType = "GitHub.Orgs.RepoTimelineInstance";
 
         public const string PathInstanceRecordType = "GitHub.Repos.PathInstance";
         public const string ViewInstanceRecordType = "GitHub.Repos.ViewInstance";
@@ -16,13 +20,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         public const string ReferrerInstanceRecordType = "GitHub.Repos.ReferrerInstance";
         public const string MilestoneInstanceRecordType = "GitHub.Repos.MilestoneInstance";
         public const string CommitInstanceRecordType = "GitHub.Repos.CommitInstance";
+        public const string CommitCommentInstanceRecordType = "GitHub.Repos.CommitCommentInstance";
+
         public const string CommentInstanceRecordType = "GitHub.Repos.CommentInstance";
         public const string PullRequestInstanceRecordType = "GitHub.Repos.PullInstance";
         public const string PullRequestReviewsRecordType = "GitHub.Repos.Pulls.ReviewsInstance";
         public const string PullRequestCommentInstanceRecordType = "GitHub.Repos.Pulls.CommentInstance";
+        public const string PullRequestTimelineInstanceRecordType = "GitHub.Repos.Pulls.TimelineInstance";
+
         public const string IssueInstanceRecordType = "GitHub.Repos.IssueInstance";
         public const string IssueCommentInstanceRecordType = "GitHub.Repos.Issues.CommentInstance";
+        public const string IssueTimelineInstanceRecordType = "GitHub.Repos.IssueTimelineInstance";
 
+        public const string OrganizationsApiName = "GitHub.Organizations";
         public const string TeamMembersApiName = "GitHub.Teams.Members";
         public const string TeamsApiName = "GitHub.Orgs.Teams";
         public const string TeamRepositoriesApiName = "GitHub.Teams.Repos";
@@ -35,6 +45,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         public const string MilestonesApiName = "GitHub.Repos.Milestones";
         public const string CommitInstanceApiName = "GitHub.Repos.CommitInstance";
         public const string CommitsApiName = "GitHub.Repos.Commits";
+        public const string CommitCommentApiName = "GitHub.Repos.CommitComment";
         public const string CommentsApiName = "GitHub.Repos.Comments";
         public const string PullRequestsApiName = "GitHub.Repos.Pulls";
         public const string PullRequestReviewsApiName = "GitHub.Repos.Pulls.Reviews";
