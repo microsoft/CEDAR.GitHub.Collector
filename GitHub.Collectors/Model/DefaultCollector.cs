@@ -49,12 +49,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 
         public virtual async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
         {
-            JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
-            if (organizationUrlToken != null)
-            {
-                string organizationUrl = organizationUrlToken.Value<string>();
-                await this.ProcessUrlAsync(organizationUrl, OrganizationInstanceRecordType, allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
-            }
+            // ToDo: kivancm: 08/09/2021, due to higher rate of 'secondary' rate limiting 429s from GitHub.com, disable the following to reduce the overall HTTP request against GitHub.com.
+            //JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
+            //if (organizationUrlToken != null)
+            //{
+            //    string organizationUrl = organizationUrlToken.Value<string>();
+            //    await this.ProcessUrlAsync(organizationUrl, OrganizationInstanceRecordType, allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
+            //}
 
             JToken senderUrlToken = jsonObject.SelectToken($"$.sender.url");
             if (senderUrlToken != null)
