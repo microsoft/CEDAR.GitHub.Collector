@@ -5,6 +5,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
     public class DataContract
     {
+        public const string OrganizationInstanceRecordType = "GitHub.OrgIstance";
+        public const string UserInstanceRecordType = "GitHub.UserInstance";
         public const string TeamMemberInstanceRecordType = "GitHub.Teams.MemberInstance";
         public const string TeamInstanceRecordType = "GitHub.Orgs.TeamInstance";
         public const string TeamRepositoryInstanceRecordType = "GitHub.Teams.RepositoryInstance";
@@ -23,6 +25,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         public const string IssueInstanceRecordType = "GitHub.Repos.IssueInstance";
         public const string IssueCommentInstanceRecordType = "GitHub.Repos.Issues.CommentInstance";
 
+        public const string UsersApiName = "GitHub.Users";
+        public const string OrganizationsApiName = "GitHub.Orgs";
         public const string TeamMembersApiName = "GitHub.Teams.Members";
         public const string TeamsApiName = "GitHub.Orgs.Teams";
         public const string TeamRepositoriesApiName = "GitHub.Teams.Repos";

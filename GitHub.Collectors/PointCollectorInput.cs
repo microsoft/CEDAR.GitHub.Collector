@@ -2,6 +2,7 @@
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.CloudMine.GitHub.Collectors
 {
@@ -9,55 +10,31 @@ namespace Microsoft.CloudMine.GitHub.Collectors
     public class PointCollectorInput
     {
         public string Url { get; set; }
-        public virtual string RecordType { get; set; }
-        public virtual string ApiName { get; set; }
-        public JObject Context { get; set; }
+        public string RecordType { get; set; }
+        public string ApiName { get; set; }
+        public Dictionary<string, JToken> Context { get; set; }
         public bool IgnoreCache { get; set; } = false;
         public string[] IgnoreCacheForApis { get; set; } = new string[0];
         // Optional fields to overwrite default authentication
         public string IdentityEnvironmentVariable { get; set; } = "Identity";
         public string PersonalAccessTokenEnvironmentVariable { get; set; } = "PersonalAccessToken";
+        public string ResponseType { get; set; } = "Array";
 
-        public string getOrganizationLogin()
+        public Repository GetRepository()
         {
-            JToken organizationLoginToken = this.Context.SelectToken("$.OrganizationLogin");
-            if (organizationLoginToken == null)
-            {
-                throw new FatalTerminalException("Invalid request: point collector request must contain the following JSON attribute: $.Request.Context.OrganizationLogin");
-            }
-            return organizationLoginToken.Value<string>();
-        }
+            string organizationLogin = this.Context.TryGetValue("OrganizationLogin", out JToken organizationLoginToken) ? organizationLoginToken.Value<string>() : null;
+            long organizationId = this.Context.TryGetValue("OrganizationId", out JToken organizationIdToken) ? organizationIdToken.Value<long>() : -1;
+            string repositoryName = this.Context.TryGetValue("RepositoryName", out JToken repositoryNameToken) ? repositoryNameToken.Value<string>() : null;
+            long repositoryId = this.Context.TryGetValue("RepositoryId", out JToken repositoryIdToken) ? repositoryIdToken.Value<long>() : 0;
 
-        public Repository getRepository()
-        {
-            JToken organizationLoginToken = this.Context.SelectToken("$.OrganizationLogin");
-            JToken organizationIdToken = this.Context.SelectToken("$.OrganizationId");
-            JToken repositoryNameToken = this.Context.SelectToken("$.RepositoryId");
-            JToken repositoryIdToken = this.Context.SelectToken("$.RepositoryId");
-
-            if (organizationLoginToken == null)
+            if (organizationLogin == null)
             {
                 throw new FatalTerminalException("Invalid request: point collector request must contain the following JSON attribute: $.Request.Context.OrganizationLogin");
             }
 
-            if (organizationIdToken == null)
+            if (organizationId == -1)
             {
                 throw new FatalTerminalException("Invalid request: point collector request must contain the following JSON attribute: $.Request.Context.OrganizationId");
-            }
-
-            long organizationId = organizationIdToken.Value<long>();
-            string organizationLogin = organizationLoginToken.Value<string>();
-            string repositoryName = string.Empty;
-            long repositoryId = 0;
-
-            if (repositoryIdToken != null)
-            {
-                repositoryId = repositoryIdToken.Value<long>();
-            }
-
-            if (repositoryNameToken != null)
-            {
-                repositoryName = repositoryNameToken.Value<string>();
             }
 
             return new Repository(organizationId, repositoryId, organizationLogin, repositoryName);

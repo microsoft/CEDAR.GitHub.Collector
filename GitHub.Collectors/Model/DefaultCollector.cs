@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Context;
@@ -13,7 +9,14 @@ using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
@@ -21,9 +24,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
     {
         public static readonly HttpResponseSignature UserNotFoundResponse = new HttpResponseSignature(HttpStatusCode.NotFound, "Not Found");
         public static readonly HttpResponseSignature ResourceNotAccessibleByIntegrationResponse = new HttpResponseSignature(HttpStatusCode.Forbidden, "Resource not accessible by integration");
-
-        public const string OrganizationInstanceRecordType = "GitHub.OrgIstance";
-        public const string UserInstanceRecordType = "GitHub.UserInstance";
 
         protected FunctionContext FunctionContext { get; private set; }
         protected GitHubHttpClient HttpClient { get; private set; }
@@ -49,56 +49,55 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 
         public virtual async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
         {
-            // ToDo: kivancm: 08/09/2021, due to higher rate of 'secondary' rate limiting 429s from GitHub.com, disable the following to reduce the overall HTTP request against GitHub.com.
-            //JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
-            //if (organizationUrlToken != null)
-            //{
-            //    string organizationUrl = organizationUrlToken.Value<string>();
-            //    await this.ProcessUrlAsync(organizationUrl, OrganizationInstanceRecordType, allowlistedResponses: new List<HttpResponseSignature>()).ConfigureAwait(false);
-            //}
+            JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
+            if (organizationUrlToken != null)
+            {
+                string organizationUrl = organizationUrlToken.Value<string>();
+                await this.OffloadToPointCollector(organizationUrl, DataContract.OrganizationInstanceRecordType, DataContract.OrganizationsApiName, repository, "Object").ConfigureAwait(false);
+            }
+            
 
             JToken senderUrlToken = jsonObject.SelectToken($"$.sender.url");
             if (senderUrlToken != null)
             {
                 string senderUrl = senderUrlToken.Value<string>();
-                // There are cases where we receive this payload for removed team members, members no longer exist in GitHub. Therefore, the following call can fail with 404 not found.
-                // When using a GitHub app, the same request fails with 403: "Resource not accessible by integration" response.
-                List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
-                {
-                    UserNotFoundResponse,
-                    ResourceNotAccessibleByIntegrationResponse,
-                };
-                await this.ProcessUrlAsync(senderUrl, UserInstanceRecordType, allowlistedResponses).ConfigureAwait(false);
+                await this.OffloadToPointCollector(senderUrl, DataContract.UserInstanceRecordType, DataContract.UsersApiName, repository, "Object").ConfigureAwait(false);
             }
         }
 
-        private async Task ProcessUrlAsync(string requestUrl, string recordType, List<HttpResponseSignature> allowlistedResponses)
+        private async Task OffloadToPointCollector(string url, string recordType, string apiName, Repository repository, string responseType = "Array")
         {
-            HttpResponseMessage response = await this.HttpClient.GetConditionalViaETagAsync(requestUrl, recordType, this.Authentication, allowlistedResponses).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotModified)
+            ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(this.TelemetryClient, "point");
+            await pointCache.InitializeAsync().ConfigureAwait(false);
+            PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(url);
+            tableEntity = await pointCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
+
+            if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.AddMinutes(5))
             {
+                // has been collected in last 5 minuets, skip collection
                 return;
             }
 
-            if (!response.IsSuccessStatusCode)
+            Dictionary<string, JToken> context = new Dictionary<string, JToken>()
             {
-                // Permitted allowlisted response, but we should not serialize it.
-                return;
-            }
-
-            JObject record = await HttpUtility.ParseAsJObjectAsync(response).ConfigureAwait(false);
-            RecordContext context = new RecordContext()
-            {
-                RecordType = recordType,
-                AdditionalMetadata = new Dictionary<string, JToken>()
-                {
-                    { "OriginatingUrl", requestUrl },
-                },
+                { "OrganizationLogin", JToken.FromObject(repository.OrganizationLogin) },
+                { "OrganizationId", JToken.FromObject(repository.OrganizationId) },
+                { "RepositoryId", JToken.FromObject(repository.RepositoryId) },
+                { "RepositoryName", JToken.FromObject(repository.RepositoryName) }
             };
-            foreach (IRecordWriter recordWriter in this.RecordWriters)
+
+            PointCollectorInput input = new PointCollectorInput()
             {
-                await recordWriter.WriteRecordAsync(record, context).ConfigureAwait(false);
-            }
+                Url = url,
+                RecordType = recordType,
+                ApiName = apiName,
+                Context = context,
+                ResponseType = responseType
+            };
+
+            string queueItem = JsonConvert.SerializeObject(input);
+            CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
+            await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, null, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
         }
     }
 }

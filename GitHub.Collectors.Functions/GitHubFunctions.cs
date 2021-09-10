@@ -653,7 +653,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         }
 
         [FunctionName("PointCollector")]
-        public Task PointCollector([QueueTrigger("point")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
+        public Task PointCollector([QueueTrigger("pointcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
             return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, dequeueCount);
         }
@@ -681,7 +681,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             bool success = false;
-            string outputPaths = String.Empty;
+            string outputPaths = string.Empty;
             Dictionary<string, string> sessionEndProperties = new Dictionary<string, string>();
             StatsTracker statsTracker = null;
             string identifier = "Point";
@@ -689,10 +689,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             {
                 ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
                 await pointCache.InitializeAsync().ConfigureAwait(false);
-                Repository repository = pointCollectorInput.getRepository();
+                Repository repository = pointCollectorInput.GetRepository();
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repository.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 95.0, this.apiDomain, throwOnRateLimit: true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repository.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -703,6 +703,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
+                    // ToDo : lukegostling 9/10/2021, simplify init record writers (we no longer do ADLS direct ingestion)
                     recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
                     IRecordStatsTracker recordStatsTracker = null;
 
@@ -725,7 +726,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             catch (GitHubRateLimitException exception)
             {
-                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("point").ConfigureAwait(false);
+                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
                 TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
                 TimeSpan? timeToLive = null;
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
@@ -734,7 +735,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (Exception exception)
             {
                 telemetryClient.TrackException(exception);
-                throw exception;
+                throw;
             }
             finally
             {

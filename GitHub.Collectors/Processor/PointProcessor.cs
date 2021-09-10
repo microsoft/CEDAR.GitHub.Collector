@@ -9,7 +9,6 @@ using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Processor
@@ -40,47 +39,29 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         public async Task ProcessAsync(PointCollectorInput input)
         {
             Dictionary<string, JToken> additionalMetadata = new Dictionary<string, JToken>();
-            JObject context = input.Context;
-            if (context != null)
+            foreach (KeyValuePair<string, JToken> contextElement in input.Context)
             {
-                foreach (KeyValuePair<string, JToken> contextElement in context)
-                {
-                    additionalMetadata.Add(contextElement.Key, contextElement.Value);
-                }
+                additionalMetadata.Add(contextElement.Key, contextElement.Value);
             }
-    
+
+            Type responseType = typeof(JArray);
+            if(input.ResponseType == "Object")
+            {
+                responseType = typeof(JObject);
+            }
+
             GitHubCollectionNode collectionNode = new GitHubCollectionNode()
             {
                 RecordType = input.RecordType,
                 ApiName = input.ApiName,
                 GetInitialUrl = metadata => input.Url,
                 AdditionalMetadata = additionalMetadata,
+                ResponseType = responseType
             };
 
-            foreach (IRecordWriter recordWriter in this.recordWriters)
-            {
-                await recordWriter.NewOutputAsync(input.RecordType).ConfigureAwait(false);
-            }
-            await this.ProcessAndCacheBatchingRequestAsync(input, collectionNode).ConfigureAwait(false);
-        }
-
-        private async Task ProcessAndCacheBatchingRequestAsync(PointCollectorInput input, GitHubCollectionNode collectionNode)
-        {
-            string apiName = collectionNode.ApiName;
-            if (!input.IgnoreCache && !input.IgnoreCacheForApis.Contains(apiName))
-            {
-                // PointCollectorTableEntity tableEntity = await this.cache.RetrieveAsync(new PointCollectorTableEntity(input));
-                // TODO Logic for skipping if in cache goes here
-                bool apiCollected = false;
-                if (apiCollected)
-                {
-                    // TODO track event in telemetry
-                    return;
-                }
-            }
             await this.collector.ProcessAsync(collectionNode).ConfigureAwait(false);
-            PointCollectorTableEntity pointCollectorRecord = new PointCollectorTableEntity(input);
-            await this.cache.CacheAsync(pointCollectorRecord).ConfigureAwait(false);
+            PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
+            await this.cache.CacheAsync(collectionRecord).ConfigureAwait(false);
         }
     }
 }
