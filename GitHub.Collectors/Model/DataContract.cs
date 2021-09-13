@@ -5,7 +5,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
     public class DataContract
     {
-        public const string OrganizationInstanceRecordType = "GitHub.OrgIstance";
+        public const string OrganizationInstanceRecordType = "GitHub.OrgInstance";
         public const string UserInstanceRecordType = "GitHub.UserInstance";
         public const string TeamMemberInstanceRecordType = "GitHub.Teams.MemberInstance";
         public const string TeamInstanceRecordType = "GitHub.Orgs.TeamInstance";
