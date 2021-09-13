@@ -35,9 +35,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                              GitHubHttpClient httpClient,
                              List<IRecordWriter> recordWriters,
                              ICache<RepositoryItemTableEntity> cache,
+                             ICache<PointCollectorTableEntity> pointCache,
                              ITelemetryClient telemetryClient,
                              string apiDomain)
-            : base(functionContext, authentication, httpClient, recordWriters, cache, telemetryClient)
+            : base(functionContext, authentication, httpClient, recordWriters, cache, pointCache, telemetryClient)
         {
             this.apiDomain = apiDomain;
         }

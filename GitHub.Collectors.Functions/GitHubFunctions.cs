@@ -201,6 +201,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationName : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 99.0, this.apiDomain);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
+                ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCache.InitializeAsync().ConfigureAwait(false);
+
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Main, httpClient, organizationName, this.apiDomain);
 
                 StorageManager storageManager;
@@ -208,7 +211,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier: functionContext.EventType, functionContext, contextWriter, this.adlsClient.AdlsClient);
-                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, telemetryClient, this.apiDomain);
+                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCache, telemetryClient, this.apiDomain);
                     additionalTelemetryProperties = await processor.ProcessAsync().ConfigureAwait(false);
 
                     foreach (KeyValuePair<string, string> property in GetMainCollectorSessionStartEventProperties(functionContext, identifier: functionContext.EventType, functionContext.LogicAppRunId))

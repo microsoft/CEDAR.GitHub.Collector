@@ -1,5 +1,6 @@
 ﻿using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Utility;
+using System.Web;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Cache
 {
@@ -9,10 +10,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         public PointCollectorTableEntity(string url)
         {
             this.Url = url;
-            string urlHash = HashUtility.ComputeSha256(this.Url);
-            this.PartitionKey = urlHash;
+            string escapedUrl = HttpUtility.UrlEncode(url);
+            this.PartitionKey = escapedUrl;
             this.RowKey = string.Empty;
-            this.AddContext("Url", this.Url);
         }
 
         public PointCollectorTableEntity()

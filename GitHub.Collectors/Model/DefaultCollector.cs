@@ -29,6 +29,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         protected GitHubHttpClient HttpClient { get; private set; }
         protected List<IRecordWriter> RecordWriters { get; private set; }
         protected ICache<RepositoryItemTableEntity> Cache { get; private set; }
+        protected ICache<PointCollectorTableEntity> PointCache { get; private set; }
         protected ITelemetryClient TelemetryClient { get; private set; }
         protected IAuthentication Authentication { get; private set; }
 
@@ -37,12 +38,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                                 GitHubHttpClient httpClient,
                                 List<IRecordWriter> recordWriters,
                                 ICache<RepositoryItemTableEntity> cache,
+                                ICache<PointCollectorTableEntity> pointCache,
                                 ITelemetryClient telemetryClient)
         {
             this.FunctionContext = functionContext;
             this.HttpClient = httpClient;
             this.RecordWriters = recordWriters;
             this.Cache = cache;
+            this.PointCache = pointCache;
             this.TelemetryClient = telemetryClient;
             this.Authentication = authentication;
         }
@@ -53,7 +56,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             if (organizationUrlToken != null)
             {
                 string organizationUrl = organizationUrlToken.Value<string>();
-                await this.OffloadToPointCollector(organizationUrl, DataContract.OrganizationInstanceRecordType, DataContract.OrganizationsApiName, repository, "Object").ConfigureAwait(false);
+                await this.OffloadToPointCollector(organizationUrl, DataContract.OrganizationInstanceRecordType, DataContract.OrganizationsApiName, repository, responseType: "Object").ConfigureAwait(false);
             }
             
 
@@ -61,16 +64,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             if (senderUrlToken != null)
             {
                 string senderUrl = senderUrlToken.Value<string>();
-                await this.OffloadToPointCollector(senderUrl, DataContract.UserInstanceRecordType, DataContract.UsersApiName, repository, "Object").ConfigureAwait(false);
+                await this.OffloadToPointCollector(senderUrl, DataContract.UserInstanceRecordType, DataContract.UsersApiName, repository, responseType : "Object").ConfigureAwait(false);
             }
         }
 
-        private async Task OffloadToPointCollector(string url, string recordType, string apiName, Repository repository, string responseType = "Array")
+        private async Task OffloadToPointCollector(string url, string recordType, string apiName, Repository repository, string responseType)
         {
-            ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(this.TelemetryClient, "point");
-            await pointCache.InitializeAsync().ConfigureAwait(false);
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(url);
-            tableEntity = await pointCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
+            tableEntity = await this.PointCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
 
             if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.AddMinutes(5))
             {
@@ -95,9 +96,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                 ResponseType = responseType
             };
 
-            string queueItem = JsonConvert.SerializeObject(input);
-            CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
-            await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), null, null, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
+            IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
+            await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
         }
     }
 }

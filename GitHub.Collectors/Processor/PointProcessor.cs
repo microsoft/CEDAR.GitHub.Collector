@@ -45,7 +45,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
             }
 
             Type responseType = typeof(JArray);
-            if(input.ResponseType == "Object")
+            if( input.ResponseType.Equals("Object") )
             {
                 responseType = typeof(JObject);
             }
