@@ -28,7 +28,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         {
             repository = new Repository(repository.OrganizationId, 0, repository.OrganizationLogin, string.Empty);
 
-            JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
+            JToken organizationUrlToken = jsonObject.SelectToken("$.organization.url");
             if (organizationUrlToken != null)
             {
                 string organizationUrl = organizationUrlToken.Value<string>();
@@ -45,7 +45,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             }
             
 
-            JToken senderUrlToken = jsonObject.SelectToken($"$.sender.url");
+            JToken senderUrlToken = jsonObject.SelectToken("$.sender.url");
             if (senderUrlToken != null)
             {
                 string senderUrl = senderUrlToken.Value<string>();

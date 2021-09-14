@@ -1,20 +1,16 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Context;
-using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
-using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model

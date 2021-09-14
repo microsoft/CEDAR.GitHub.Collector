@@ -3,10 +3,7 @@ using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
-using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
-using Microsoft.CloudMine.GitHub.Collectors.Collector;
-using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json.Linq;
@@ -33,9 +30,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 
         public async Task ProcessAsync(PointCollectorInput input)
         {
-            Dictionary<string, JToken> additionalMetadata = new Dictionary<string, JToken>();
-            additionalMetadata.Add("OrganizationId", input.Repository.OrganizationId);
-            additionalMetadata.Add("OrganizationLogin", input.Repository.OrganizationLogin);
+            Dictionary<string, JToken> additionalMetadata = new Dictionary<string, JToken>()
+            {
+                { "OrganizationId", input.Repository.OrganizationId },
+                { "OrganizationLogin", input.Repository.OrganizationLogin }
+            };
 
             if (input.Repository.RepositoryId != 0)
             {
@@ -44,6 +43,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             }
 
             Type responseType = typeof(JArray);
+
             if( input.ResponseType.Equals("Object") )
             {
                 responseType = typeof(JObject);

@@ -1,5 +1,4 @@
 ﻿using Microsoft.CloudMine.Core.Collectors.Cache;
-using Microsoft.CloudMine.Core.Collectors.Utility;
 using System.Web;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Cache
@@ -16,7 +15,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         }
 
         public PointCollectorTableEntity()
-        {
-        }
+        { }
     }
 }

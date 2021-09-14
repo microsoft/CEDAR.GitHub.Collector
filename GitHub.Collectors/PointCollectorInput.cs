@@ -1,7 +1,5 @@
-﻿using Microsoft.CloudMine.Core.Collectors.Error;
-using Microsoft.CloudMine.Core.Collectors.Web;
+﻿using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
