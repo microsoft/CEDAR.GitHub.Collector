@@ -28,8 +28,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         protected FunctionContext FunctionContext { get; private set; }
         protected GitHubHttpClient HttpClient { get; private set; }
         protected List<IRecordWriter> RecordWriters { get; private set; }
-        protected ICache<RepositoryItemTableEntity> Cache { get; private set; }
-        protected ICache<PointCollectorTableEntity> PointCache { get; private set; }
+        protected ICache<RepositoryItemTableEntity> Cache { get; }
+        protected ICache<PointCollectorTableEntity> PointCollectorCache { get; }
         protected ITelemetryClient TelemetryClient { get; private set; }
         protected IAuthentication Authentication { get; private set; }
 
@@ -38,14 +38,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                                 GitHubHttpClient httpClient,
                                 List<IRecordWriter> recordWriters,
                                 ICache<RepositoryItemTableEntity> cache,
-                                ICache<PointCollectorTableEntity> pointCache,
+                                ICache<PointCollectorTableEntity> pointCollectorCache,
                                 ITelemetryClient telemetryClient)
         {
             this.FunctionContext = functionContext;
             this.HttpClient = httpClient;
             this.RecordWriters = recordWriters;
             this.Cache = cache;
-            this.PointCache = pointCache;
+            this.PointCollectorCache = pointCollectorCache;
             this.TelemetryClient = telemetryClient;
             this.Authentication = authentication;
         }
@@ -71,7 +71,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         private async Task OffloadToPointCollector(string url, string recordType, string apiName, Repository repository, string responseType)
         {
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(url);
-            tableEntity = await this.PointCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
+            tableEntity = await this.PointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
 
             if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.AddMinutes(5))
             {

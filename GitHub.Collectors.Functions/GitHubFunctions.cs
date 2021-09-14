@@ -201,8 +201,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationName : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 99.0, this.apiDomain);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
-                ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
-                await pointCache.InitializeAsync().ConfigureAwait(false);
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
 
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Main, httpClient, organizationName, this.apiDomain);
 
@@ -211,7 +211,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier: functionContext.EventType, functionContext, contextWriter, this.adlsClient.AdlsClient);
-                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCache, telemetryClient, this.apiDomain);
+                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCollectorCache, telemetryClient, this.apiDomain);
                     additionalTelemetryProperties = await processor.ProcessAsync().ConfigureAwait(false);
 
                     foreach (KeyValuePair<string, string> property in GetMainCollectorSessionStartEventProperties(functionContext, identifier: functionContext.EventType, functionContext.LogicAppRunId))
@@ -658,10 +658,16 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("PointCollector")]
         public Task PointCollector([QueueTrigger("pointcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, dequeueCount);
+            return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : string.Empty, dequeueCount);
         }
 
-        public async Task ExecutePointCollectorAsync(string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
+        [FunctionName("PointCollectorDri")]
+        public Task PointCollectorAdHoc([QueueTrigger("pointcollector-dri")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
+        {
+            return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : "-dri", dequeueCount);
+        }
+
+        public async Task ExecutePointCollectorAsync(string queueItem, ExecutionContext executionContext, ILogger logger, string queueSuffix, int dequeueCount)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -690,8 +696,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             string identifier = "Point";
             try
             {
-                ICache<PointCollectorTableEntity> pointCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
-                await pointCache.InitializeAsync().ConfigureAwait(false);
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
                 Repository repository = pointCollectorInput.GetRepository();
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
@@ -720,7 +726,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     }
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
-                    PointProcessor processor = new PointProcessor(authentication, recordWriters, httpClient, pointCache, telemetryClient, this.apiDomain);
+                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient, this.apiDomain);
                     await processor.ProcessAsync(pointCollectorInput).ConfigureAwait(false);
                 }
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
@@ -729,7 +735,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             catch (GitHubRateLimitException exception)
             {
-                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
+                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
                 TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
                 TimeSpan? timeToLive = null;
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);

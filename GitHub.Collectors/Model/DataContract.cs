@@ -5,6 +5,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
     public class DataContract
     {
+        //ToDo fix typo in OrganizationInstanceRecordType 
         public const string OrganizationInstanceRecordType = "GitHub.OrgIstance";
         public const string UserInstanceRecordType = "GitHub.UserInstance";
         public const string TeamMemberInstanceRecordType = "GitHub.Teams.MemberInstance";

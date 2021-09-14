@@ -28,7 +28,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         private readonly List<IRecordWriter> recordWriters;
         private readonly IEventsBookkeeper eventsBookkeeper;
         private readonly ICache<RecordTableEntity> recordsCache;
-        private readonly ICache<PointCollectorTableEntity> pointCache;
+        private readonly ICache<PointCollectorTableEntity> pointCollectorCache;
         private readonly ICache<RepositoryItemTableEntity> collectorCache;
         private readonly ITelemetryClient telemetryClient;
         private readonly string apiDomain;
@@ -56,7 +56,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                                 IEventsBookkeeper eventsBookkeeper,
                                 ICache<RecordTableEntity> recordsCache,
                                 ICache<RepositoryItemTableEntity> collectorCache,
-                                ICache<PointCollectorTableEntity> pointCache,
+                                ICache<PointCollectorTableEntity> pointCollectorCache,
                                 ITelemetryClient telemetryClient,
                                 string apiDomain)
         {
@@ -68,7 +68,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
             this.eventsBookkeeper = eventsBookkeeper;
             this.recordsCache = recordsCache;
             this.collectorCache = collectorCache;
-            this.pointCache = pointCache;
+            this.pointCollectorCache = pointCollectorCache;
             this.telemetryClient = telemetryClient;
             this.apiDomain = apiDomain;
         }
@@ -166,7 +166,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 await recordWriter.WriteRecordAsync(record, recordContext).ConfigureAwait(false);
             }
 
-            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.authentication, this.httpClient, this.recordWriters, this.collectorCache, this.pointCache, this.telemetryClient, this.apiDomain);
+            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.authentication, this.httpClient, this.recordWriters, this.collectorCache, this.pointCollectorCache, this.telemetryClient, this.apiDomain);
             await collector.ProcessWebhookPayloadAsync(record, repository).ConfigureAwait(false);
 
             Dictionary<string, string> additionalSessionEndProperties = new Dictionary<string, string>(this.RetrieveAdditionalPrimaryKeys(record))

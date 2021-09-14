@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 {
-    public class PointProcessor
+    public class PointCollector
     {
         private readonly CollectorBase<GitHubCollectionNode> collector;
 
@@ -22,7 +22,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         private readonly ITelemetryClient telemetryClient;
         private readonly string apiDomain;
 
-        public PointProcessor(IAuthentication authentication,
+        public PointCollector(IAuthentication authentication,
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
                               ICache<PointCollectorTableEntity> cache,

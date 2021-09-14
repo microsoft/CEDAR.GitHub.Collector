@@ -22,14 +22,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                                        GitHubHttpClient httpClient,
                                        List<IRecordWriter> recordWriters,
                                        ICache<RepositoryItemTableEntity> cache,
-                                       ICache<PointCollectorTableEntity> pointCache,
+                                       ICache<PointCollectorTableEntity> pointCollectorCache,
                                        ITelemetryClient telemetryClient,
                                        string apiDomain)
         {
             return eventType switch
             {
-                "push" => new PushCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCache, telemetryClient, apiDomain),
-                _ => new DefaultCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCache, telemetryClient),
+                "push" => new PushCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCollectorCache, telemetryClient, apiDomain),
+                _ => new DefaultCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCollectorCache, telemetryClient),
             };
         }
     }
