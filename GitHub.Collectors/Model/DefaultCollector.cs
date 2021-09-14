@@ -52,6 +52,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 
         public virtual async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
         {
+            repository = new Repository(repository.OrganizationId, 0, repository.OrganizationLogin, string.Empty);
+
             JToken organizationUrlToken = jsonObject.SelectToken($"$.organization.url");
             if (organizationUrlToken != null)
             {
