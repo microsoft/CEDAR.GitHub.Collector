@@ -19,24 +19,16 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
     public class PointCollector
     {
         private readonly CollectorBase<GitHubCollectionNode> collector;
-
-        private readonly List<IRecordWriter> recordWriters;
         private readonly ICache<PointCollectorTableEntity> cache;
-        private readonly ITelemetryClient telemetryClient;
-        private readonly string apiDomain;
 
         public PointCollector(IAuthentication authentication,
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
                               ICache<PointCollectorTableEntity> cache,
-                              ITelemetryClient telemetryClient,
-                              string apiDomain)
+                              ITelemetryClient telemetryClient)
         {
             this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
-            this.recordWriters = recordWriters;
             this.cache = cache;
-            this.telemetryClient = telemetryClient;
-            this.apiDomain = apiDomain;
         }
 
         public async Task ProcessAsync(PointCollectorInput input)
@@ -82,16 +74,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 // has been collected in last 5 minuets, skip collection
                 return;
             }
-
-            //PointCollectorInput input = new PointCollectorInput()
-            //{
-              //  Url = url,
-                //RecordType = recordType,
-                //ApiName = apiName,
-                //Repository = repository,
-                //ResponseType = responseType,
-                //AllowListedResponses = allowListedResponses
-            //};
 
             CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);

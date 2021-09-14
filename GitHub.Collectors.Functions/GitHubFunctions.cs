@@ -726,7 +726,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     }
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
-                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient, this.apiDomain);
+                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient);
                     await processor.ProcessAsync(pointCollectorInput).ConfigureAwait(false);
                 }
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
