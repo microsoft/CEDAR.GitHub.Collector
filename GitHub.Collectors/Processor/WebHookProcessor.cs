@@ -166,7 +166,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 await recordWriter.WriteRecordAsync(record, recordContext).ConfigureAwait(false);
             }
 
-            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.authentication, this.httpClient, this.recordWriters, this.collectorCache, this.pointCollectorCache, this.telemetryClient, this.apiDomain);
+            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.collectorCache, this.pointCollectorCache, this.telemetryClient, this.apiDomain);
             await collector.ProcessWebhookPayloadAsync(record, repository).ConfigureAwait(false);
 
             Dictionary<string, string> additionalSessionEndProperties = new Dictionary<string, string>(this.RetrieveAdditionalPrimaryKeys(record))

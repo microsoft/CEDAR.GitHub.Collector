@@ -18,9 +18,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
 
         public ICollector GetCollector(string eventType,
                                        FunctionContext functionContext,
-                                       IAuthentication authentication,
-                                       GitHubHttpClient httpClient,
-                                       List<IRecordWriter> recordWriters,
                                        ICache<RepositoryItemTableEntity> cache,
                                        ICache<PointCollectorTableEntity> pointCollectorCache,
                                        ITelemetryClient telemetryClient,
@@ -28,8 +25,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         {
             return eventType switch
             {
-                "push" => new PushCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCollectorCache, telemetryClient, apiDomain),
-                _ => new DefaultCollector(functionContext, authentication, httpClient, recordWriters, cache, pointCollectorCache, telemetryClient),
+                "push" => new PushCollector(functionContext, cache, pointCollectorCache, telemetryClient, apiDomain),
+                _ => new DefaultCollector(pointCollectorCache),
             };
         }
     }

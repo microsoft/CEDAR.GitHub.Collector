@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Context;
@@ -12,9 +8,14 @@ using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
+using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
@@ -29,18 +30,21 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         public const string NotFoundMessage = "Not Found";
 
         private readonly string apiDomain;
+        private FunctionContext FunctionContext;
+        private ICache<RepositoryItemTableEntity> Cache;
+        private ITelemetryClient TelemetryClient;
 
         public PushCollector(FunctionContext functionContext,
-                             IAuthentication authentication,
-                             GitHubHttpClient httpClient,
-                             List<IRecordWriter> recordWriters,
                              ICache<RepositoryItemTableEntity> cache,
                              ICache<PointCollectorTableEntity> pointCollectorCache,
                              ITelemetryClient telemetryClient,
                              string apiDomain)
-            : base(functionContext, authentication, httpClient, recordWriters, cache, pointCollectorCache, telemetryClient)
+            : base(pointCollectorCache)
         {
             this.apiDomain = apiDomain;
+            this.FunctionContext = functionContext;
+            this.Cache = cache;
+            this.TelemetryClient = telemetryClient;
         }
 
         public override async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
@@ -106,30 +110,18 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             };
 
             string url = $"https://{this.apiDomain}/repos/{repository.OrganizationLogin}/{repository.RepositoryName}/commits/{commitSha}";
-            HttpResponseMessage response = await this.HttpClient.GetAsync(url, this.Authentication, DataContract.CommitInstanceApiName, allowlistedResponses).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return;
-            }
 
-            JObject record = await HttpUtility.ParseAsJObjectAsync(response).ConfigureAwait(false);
-            RecordContext context = new RecordContext()
+            PointCollectorInput pointCollectorInput = new PointCollectorInput()
             {
-                RecordType = DataContract.CommitInstanceRecordType,
-                AdditionalMetadata = new Dictionary<string, JToken>()
-                {
-                    { "OriginatingUrl", url },
-                    { "OrganizationId", repository.OrganizationId },
-                    { "OrganizationLogin", repository.OrganizationLogin },
-                    { "RepositoryId", repository.RepositoryId },
-                    { "RepositoryName", repository.RepositoryName },
-                },
+                Url = url,
+                RecordType = DataContract.CommentInstanceRecordType,
+                ApiName = DataContract.CommitInstanceApiName,
+                Repository = repository,
+                ResponseType = "Object",
+                AllowListedResponses = allowlistedResponses
             };
-            
-            foreach(IRecordWriter recordWriter in this.RecordWriters)
-            {
-                await recordWriter.WriteRecordAsync(record, context).ConfigureAwait(false);
-            }
+
+            await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache);
         }
     }
 }
