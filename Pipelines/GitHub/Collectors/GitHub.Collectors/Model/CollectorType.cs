@@ -10,5 +10,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         Onboarding,
         TrafficTimer,
         Traffic,
+        Point,
     }
 }
