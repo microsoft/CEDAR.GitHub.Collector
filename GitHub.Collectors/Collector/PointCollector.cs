@@ -77,8 +77,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             };
 
             await this.collector.ProcessAsync(collectionNode).ConfigureAwait(false);
-            PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
-            await this.cache.CacheAsync(collectionRecord).ConfigureAwait(false);
         }
 
         public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
@@ -107,6 +105,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
+            PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
+            await pointCollectorCache.CacheAsync(collectionRecord).ConfigureAwait(false);
         }
     }
 }
