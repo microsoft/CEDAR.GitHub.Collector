@@ -4,13 +4,10 @@
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Context;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
-using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
@@ -19,6 +16,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
     {
         private const string EmptyCommitSha = "0000000000000000000000000000000000000000";
 
+        public const string NoCommitShaFoundResponsePrefix = "No commit found for SHA: ";
+        public const string NotFoundMessage = "Not Found";
+
+        public static string NoCommitShaFoundResponse(string commitSha) => $"{NoCommitShaFoundResponsePrefix}{commitSha}";
+        
         private readonly string apiDomain;
         private readonly FunctionContext functionContext;
         private readonly ICache<RepositoryItemTableEntity> cache;
