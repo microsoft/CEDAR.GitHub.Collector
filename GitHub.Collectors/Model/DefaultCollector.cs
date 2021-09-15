@@ -2,26 +2,24 @@
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.Cache;
+using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
     public class DefaultCollector : ICollector
     {
-        public static readonly HttpResponseSignature UserNotFoundResponse = new HttpResponseSignature(HttpStatusCode.NotFound, "Not Found");
-        public static readonly HttpResponseSignature ResourceNotAccessibleByIntegrationResponse = new HttpResponseSignature(HttpStatusCode.Forbidden, "Resource not accessible by integration");
-
         protected ICache<PointCollectorTableEntity> PointCollectorCache { get; }
+        protected readonly ITelemetryClient telemetryClient;
 
-        public DefaultCollector(ICache<PointCollectorTableEntity> pointCollectorCache)
+        public DefaultCollector(ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
         {
             this.PointCollectorCache = pointCollectorCache;
+            this.telemetryClient = telemetryClient;
         }
 
         public virtual async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
@@ -39,21 +37,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                     ApiName = DataContract.OrganizationsApiName,
                     Repository = repository,
                     ResponseType = "Object",
-                    AllowListedResponses = new List<HttpResponseSignature>()
                 };
-                await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache).ConfigureAwait(false);
+                await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache, this.telemetryClient).ConfigureAwait(false);
             }
             
-
             JToken senderUrlToken = jsonObject.SelectToken("$.sender.url");
             if (senderUrlToken != null)
             {
                 string senderUrl = senderUrlToken.Value<string>();
-                List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
-                {
-                    UserNotFoundResponse,
-                    ResourceNotAccessibleByIntegrationResponse,
-                };
                 PointCollectorInput pointCollectorInput = new PointCollectorInput()
                 {
                     Url = senderUrl,
@@ -61,9 +52,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                     ApiName = DataContract.UsersApiName,
                     Repository = repository,
                     ResponseType = "Object",
-                    AllowListedResponses = allowlistedResponses
                 };
-                await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache).ConfigureAwait(false);
+                await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache, this.telemetryClient).ConfigureAwait(false);
             }
         }
     }

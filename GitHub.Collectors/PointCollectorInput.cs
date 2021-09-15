@@ -18,6 +18,5 @@ namespace Microsoft.CloudMine.GitHub.Collectors
         public string IdentityEnvironmentVariable { get; set; } = "Identity";
         public string PersonalAccessTokenEnvironmentVariable { get; set; } = "PersonalAccessToken";
         public string ResponseType { get; set; } = "Array";
-        public List<HttpResponseSignature> AllowListedResponses { get; set; } = new List<HttpResponseSignature>();
     }
 }

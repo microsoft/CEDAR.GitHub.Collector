@@ -19,28 +19,20 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
     {
         private const string EmptyCommitSha = "0000000000000000000000000000000000000000";
 
-        // This can happen if the commits referenced in a push had been garbage collected (which can happen due to various reasons) and are no longer accessible through Git/Hub.
-        public const string NoCommitShaFoundResponsePrefix = "No commit found for SHA: ";
-        public static string NoCommitShaFoundResponse(string commitSha) => $"{NoCommitShaFoundResponsePrefix}{commitSha}";
-
-        public const string NotFoundMessage = "Not Found";
-
         private readonly string apiDomain;
-        private FunctionContext FunctionContext;
-        private ICache<RepositoryItemTableEntity> Cache;
-        private ITelemetryClient TelemetryClient;
+        private readonly FunctionContext functionContext;
+        private readonly ICache<RepositoryItemTableEntity> cache;
 
         public PushCollector(FunctionContext functionContext,
                              ICache<RepositoryItemTableEntity> cache,
                              ICache<PointCollectorTableEntity> pointCollectorCache,
                              ITelemetryClient telemetryClient,
                              string apiDomain)
-            : base(pointCollectorCache)
+            : base(pointCollectorCache, telemetryClient)
         {
             this.apiDomain = apiDomain;
-            this.FunctionContext = functionContext;
-            this.Cache = cache;
-            this.TelemetryClient = telemetryClient;
+            this.functionContext = functionContext;
+            this.cache = cache;
         }
 
         public override async Task ProcessWebhookPayloadAsync(JObject jsonObject, Repository repository)
@@ -79,31 +71,25 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                 return;
             }
 
-            string collectorIdentifier = $"{this.FunctionContext.SessionId}_{jsonPath}";
-            RepositoryItemTableEntity cacheEntity = await this.Cache.RetrieveAsync(new RepositoryItemTableEntity(repository, DataContract.CommitInstanceRecordType, commitSha)).ConfigureAwait(false);
+            string collectorIdentifier = $"{this.functionContext.SessionId}_{jsonPath}";
+            RepositoryItemTableEntity cacheEntity = await this.cache.RetrieveAsync(new RepositoryItemTableEntity(repository, DataContract.CommitInstanceRecordType, commitSha)).ConfigureAwait(false);
             if (cacheEntity != null)
             {
                 if (collectorIdentifier.Equals(cacheEntity.CollectorIdentifier))
                 {
                     // This commit was processed and cached by the collector that processed its delivery. Re-process it.
-                    this.TelemetryClient.TrackCollectorCacheHit(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha, collectorIdentifier, cacheEntity.CollectorIdentifier, decision: "Re-collect");
+                    this.telemetryClient.TrackCollectorCacheHit(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha, collectorIdentifier, cacheEntity.CollectorIdentifier, decision: "Re-collect");
                 }
                 else
                 {
                     // This commit was processed and cached by another collector that processed the corresponding delivery. Don't process it further.
-                    this.TelemetryClient.TrackCollectorCacheHit(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha, collectorIdentifier, cacheEntity.CollectorIdentifier, decision: "Skip");
+                    this.telemetryClient.TrackCollectorCacheHit(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha, collectorIdentifier, cacheEntity.CollectorIdentifier, decision: "Skip");
                     return;
                 }
             }
 
-            this.TelemetryClient.TrackCollectorCacheMiss(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha);
-            await this.Cache.CacheAsync(new RepositoryItemTableEntity(repository, DataContract.CommitInstanceRecordType, commitSha, collectorIdentifier)).ConfigureAwait(false);
-
-            List<HttpResponseSignature> allowlistedResponses = new List<HttpResponseSignature>()
-            {
-                new HttpResponseSignature(HttpStatusCode.NotFound, NotFoundMessage),
-                new HttpResponseSignature(HttpStatusCode.UnprocessableEntity, NoCommitShaFoundResponse(commitSha)),
-            };
+            this.telemetryClient.TrackCollectorCacheMiss(repository, recordType: DataContract.CommitInstanceRecordType, recordValue: commitSha);
+            await this.cache.CacheAsync(new RepositoryItemTableEntity(repository, DataContract.CommitInstanceRecordType, commitSha, collectorIdentifier)).ConfigureAwait(false);
 
             string url = $"https://{this.apiDomain}/repos/{repository.OrganizationLogin}/{repository.RepositoryName}/commits/{commitSha}";
 
@@ -114,10 +100,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
                 ApiName = DataContract.CommitInstanceApiName,
                 Repository = repository,
                 ResponseType = "Object",
-                AllowListedResponses = allowlistedResponses
             };
 
-            await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache);
+            await PointCollector.OffloadToPointCollector(pointCollectorInput, this.PointCollectorCache, this.telemetryClient);
         }
     }
 }

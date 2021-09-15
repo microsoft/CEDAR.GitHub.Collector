@@ -3,12 +3,15 @@ using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
+using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Collector
@@ -49,6 +52,20 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 responseType = typeof(JObject);
             }
 
+            List<HttpResponseSignature> allowListedResponses = new List<HttpResponseSignature>();
+
+            switch (input.RecordType)
+            {
+                case DataContract.UserInstanceRecordType :
+                    allowListedResponses.Add(new HttpResponseSignature(HttpStatusCode.NotFound, "Not Found"));
+                    allowListedResponses.Add(new HttpResponseSignature(HttpStatusCode.Forbidden, "Resource not accessible by integration"));
+                    break;
+                case DataContract.CommentInstanceRecordType :
+                    allowListedResponses.Add(new HttpResponseSignature(HttpStatusCode.NotFound, "Not Found"));
+                    allowListedResponses.Add(new HttpResponseSignature(HttpStatusCode.UnprocessableEntity, "No commit found for SHA: [0-9a-f]*"));
+                    break;
+            }
+
             GitHubCollectionNode collectionNode = new GitHubCollectionNode()
             {
                 RecordType = input.RecordType,
@@ -56,7 +73,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 GetInitialUrl = metadata => input.Url,
                 AdditionalMetadata = additionalMetadata,
                 ResponseType = responseType,
-                AllowlistedResponses = input.AllowListedResponses
+                AllowlistedResponses = allowListedResponses,
             };
 
             await this.collector.ProcessAsync(collectionNode).ConfigureAwait(false);
@@ -64,17 +81,29 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             await this.cache.CacheAsync(collectionRecord).ConfigureAwait(false);
         }
 
-        public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache)
+        public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
         {
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(input.Url);
             tableEntity = await pointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
-
+            Dictionary<string, string> properties;
             if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.AddMinutes(5))
             {
                 // has been collected in last 5 minuets, skip collection
+                properties = new Dictionary<string, string>()
+                {
+                    {"Url", input.Url },
+                    {"Skipped", "True" },
+                };
+                telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
                 return;
             }
 
+            properties = new Dictionary<string, string>()
+            {
+                {"Url", input.Url },
+                {"Skipped", "False" },
+            };
+            telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
             CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);

@@ -22,7 +22,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             return eventType switch
             {
                 "push" => new PushCollector(functionContext, cache, pointCollectorCache, telemetryClient, apiDomain),
-                _ => new DefaultCollector(pointCollectorCache),
+                _ => new DefaultCollector(pointCollectorCache, telemetryClient),
             };
         }
     }
