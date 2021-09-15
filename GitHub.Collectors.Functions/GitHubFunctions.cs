@@ -579,7 +579,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 TypeNameHandling = TypeNameHandling.None
             };
             Repository repositoryDetails = JsonConvert.DeserializeObject<Repository>(queueItem, serializerSettings);
-            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             string identifier = $"Traffic";
 
             FunctionContext context = new FunctionContext()
@@ -592,47 +591,18 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 DequeueCount = dequeueCount,
             };
 
-            StatsTracker statsTracker = null;
-            string outputPaths = string.Empty;
             bool success = false;
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
 
-                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
-                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 70.0, this.apiDomain, throwOnRateLimit : true);
-                ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
-                await requestsCache.InitializeAsync().ConfigureAwait(false);
-                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
 
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Traffic, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
+                TrafficProcessor processor = new TrafficProcessor(telemetryClient, pointCollectorCache, this.apiDomain);
+                await processor.ProcessAsync(repositoryDetails).ConfigureAwait(false);
 
-                StorageManager storageManager;
-                List<IRecordWriter> recordWriters;
-                using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
-                {
-                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
-                    IRecordStatsTracker recordStatsTracker = null;
-
-                    foreach (IRecordWriter recordWriter in recordWriters)
-                    {
-                        recordWriter.SetOutputPathPrefix($"{repositoryDetails.OrganizationId}/{repositoryDetails.RepositoryId}");
-                        if (recordStatsTracker == null)
-                        {
-                            recordStatsTracker = recordWriter;
-                        }
-                    }
-
-                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
-
-                    TrafficProcessor processor = new TrafficProcessor(authentication, recordWriters, httpClient, telemetryClient, this.apiDomain);
-                    await processor.ProcessAsync(repositoryDetails).ConfigureAwait(false);
-                }
-
-                await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
-                outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
             }
             catch (GitHubRateLimitException exception)
@@ -650,8 +620,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             finally
             {
-                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
-                statsTracker?.Stop();
+                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, string.Empty, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
             }
         }
 
