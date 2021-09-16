@@ -434,7 +434,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
                 await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
@@ -608,7 +608,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
@@ -705,7 +705,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
