@@ -1,14 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Context;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
-using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -23,8 +21,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         
         private readonly string requestBody;
         private readonly WebhookProcessorContext context;
-        private readonly IAuthentication authentication;
-        private readonly GitHubHttpClient httpClient;
         private readonly List<IRecordWriter> recordWriters;
         private readonly IEventsBookkeeper eventsBookkeeper;
         private readonly ICache<RecordTableEntity> recordsCache;
@@ -50,8 +46,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 
         public WebHookProcessor(string requestBody,
                                 WebhookProcessorContext context,
-                                IAuthentication authentication,
-                                GitHubHttpClient httpClient,
                                 List<IRecordWriter> recordWriters,
                                 IEventsBookkeeper eventsBookkeeper,
                                 ICache<RecordTableEntity> recordsCache,
@@ -62,8 +56,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         {
             this.requestBody = requestBody;
             this.context = context;
-            this.authentication = authentication;
-            this.httpClient = httpClient;
             this.recordWriters = recordWriters;
             this.eventsBookkeeper = eventsBookkeeper;
             this.recordsCache = recordsCache;
