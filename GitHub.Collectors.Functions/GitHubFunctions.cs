@@ -192,26 +192,18 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 ICache<RepositoryItemTableEntity> collectorCache = new AzureTableCache<RepositoryItemTableEntity>(telemetryClient, "github");
                 await collectorCache.InitializeAsync().ConfigureAwait(false);
 
-                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
-                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
 
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationName : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 99.0, this.apiDomain);
-                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-
                 ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
                 await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
-
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Main, httpClient, organizationName, this.apiDomain);
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier: functionContext.EventType, functionContext, contextWriter, this.adlsClient.AdlsClient);
-                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCollectorCache, telemetryClient, this.apiDomain);
+                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCollectorCache, telemetryClient, this.apiDomain);
                     additionalTelemetryProperties = await processor.ProcessAsync().ConfigureAwait(false);
 
                     foreach (KeyValuePair<string, string> property in GetMainCollectorSessionStartEventProperties(functionContext, identifier: functionContext.EventType, functionContext.LogicAppRunId))
@@ -433,11 +425,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             catch (GitHubRateLimitException exception)
             {
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
                 await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                telemetryClient.TrackException(exception, "RateLimiterRequeue");
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
@@ -605,14 +597,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 success = true;
             }
-            catch (GitHubRateLimitException exception)
-            {
-                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
-                TimeSpan? timeToLive = null;
-                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                telemetryClient.TrackException(exception, "RateLimiterRequeue");
-            }
             catch (Exception exception) when (!(exception is FatalException))
             {
                 telemetryClient.TrackException(exception, "Traffic failed.");
@@ -704,11 +688,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             catch (GitHubRateLimitException exception)
             {
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
                 CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
-                TimeSpan? initialVisibilityDelay = exception.getHiddenTime();
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
                 await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
-                telemetryClient.TrackException(exception, "RateLimiterRequeue");
             }
             catch (Exception exception)
             {

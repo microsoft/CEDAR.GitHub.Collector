@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Web
 {
@@ -11,10 +9,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
         public GitHubRateLimitException(TimeSpan hiddenTime)
             : base("RateLimitRequeue")
         {
-            this.hiddenTime = hiddenTime;
+
+            this.hiddenTime = hiddenTime > TimeSpan.FromMilliseconds(0) ? hiddenTime : TimeSpan.FromMilliseconds(0);
         }
 
-        public TimeSpan getHiddenTime()
+        public TimeSpan GetHiddenTime()
         {
             return this.hiddenTime;
         }
