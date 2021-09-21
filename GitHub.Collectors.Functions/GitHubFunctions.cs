@@ -191,7 +191,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
-                    recordWriters = storageManager.InitializeRecordWriters(identifier: functionContext.EventType, functionContext, contextWriter);
+                    recordWriters = storageManager.InitializeRecordWriters(functionContext, contextWriter);
                     WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCollectorCache, telemetryClient, this.apiDomain);
                     additionalTelemetryProperties = await processor.ProcessAsync().ConfigureAwait(false);
 
@@ -310,7 +310,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
-                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter);
+                    recordWriters = storageManager.InitializeRecordWriters(context, contextWriter);
 
                     foreach (IRecordWriter recordWriter in recordWriters)
                     {
@@ -390,7 +390,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
-                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter);
+                    recordWriters = storageManager.InitializeRecordWriters(context, contextWriter);
                     IRecordStatsTracker recordStatsTracker = null;
 
                     foreach (IRecordWriter recordWriter in recordWriters)
@@ -635,7 +635,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             string outputPaths = string.Empty;
             Dictionary<string, string> sessionEndProperties = new Dictionary<string, string>();
             StatsTracker statsTracker = null;
-            string identifier = "Point";
             try
             {
                 ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
@@ -654,8 +653,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
-                    // ToDo : lukegostling 9/10/2021, simplify init record writers (we no longer do ADLS direct ingestion)
-                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter);
+                    recordWriters = storageManager.InitializeRecordWriters(context, contextWriter);
                     IRecordStatsTracker recordStatsTracker = null;
 
                     foreach (IRecordWriter recordWriter in recordWriters)
