@@ -2,13 +2,13 @@
 // Licensed under the MIT License.
 
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
-using Microsoft.CloudMine.Core.Collectors.Web;
-using Microsoft.CloudMine.Core.Collectors.Config;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.CloudMine.Core.Collectors.IO;
-using System;
 using Microsoft.Azure.WebJobs.Host.Queues;
 using Microsoft.CloudMine.Core.Collectors.Collector;
+using Microsoft.CloudMine.Core.Collectors.Config;
+using Microsoft.CloudMine.Core.Collectors.IO;
+using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 [assembly: FunctionsStartup(typeof(Microsoft.CloudMine.GitHub.Collectors.Functions.ServiceStartup))]
 
@@ -36,7 +36,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             builder.Services.AddSingleton(settings);
             builder.Services.AddSingleton<GitHubConfigManager>();
             builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
-            builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
             builder.Services.AddSingleton<IQueueProcessorFactory, CustomQueueProcessorFactory>();
         }
     }

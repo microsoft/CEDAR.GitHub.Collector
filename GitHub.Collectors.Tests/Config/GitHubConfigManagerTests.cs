@@ -43,15 +43,11 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
                 },
                 'Storage': [
                     {
-                        'Type': 'AzureDataLakeStorageV1',
-                        'RootFolder': 'GitHub',
-                        'Version': 'v1'
-                    },
-                    {
-                        'Type': 'AzureBlob',
-                        'RootContainer': 'github',
-                        'OutputQueueName': 'github'
-                    }
+                        'Type': 'SplitAzureBlob',
+                        'RootContainer': 'rootcontainer',
+                        'StorageConnectionEnvironmentVariable': 'StorageAccountConnectionString',
+                        'NotificationQueuePrefix': 'prefix'
+                    } 
                 ],
                 'Collectors' : {
                     'Main' : {},
@@ -87,11 +83,9 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             string identifier = "identifier";
             FunctionContext functionContext = new FunctionContext();
             FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
-            AdlsClientWrapper adlsClientWrapper = new AdlsClientWrapper(this.jsonInput);
-            List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter, adlsClientWrapper.AdlsClient);
-            Assert.AreEqual(2, recordWriters.Count);
-            Assert.IsTrue(recordWriters[0] is AdlsBulkRecordWriter<FunctionContext>);
-            Assert.IsTrue(recordWriters[1] is AzureBlobRecordWriter<FunctionContext>);
+            List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter);
+            Assert.Equals(1, recordWriters.Count);
+            Assert.Equals(typeof(SplitAzureBlobRecordWriter<FunctionContext>), recordWriters[0].GetType());
         }
 
         [TestMethod]
