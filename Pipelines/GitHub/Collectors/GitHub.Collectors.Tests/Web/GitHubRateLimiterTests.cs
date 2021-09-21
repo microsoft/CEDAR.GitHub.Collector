@@ -54,12 +54,20 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web.Tests
             catch (GitHubRateLimitException exception)
             {
                 Assert.AreEqual("RateLimitRequeue", exception.Message);
-                Assert.IsTrue((TimeSpan) exception.getHiddenTime() < TimeSpan.FromSeconds(11));
-                Assert.IsTrue((TimeSpan) exception.getHiddenTime() > TimeSpan.FromSeconds(9));
+                Assert.IsTrue((TimeSpan) exception.GetHiddenTime() < TimeSpan.FromSeconds(11));
+                Assert.IsTrue((TimeSpan) exception.GetHiddenTime() > TimeSpan.FromSeconds(9));
             }
 
             tableEntity = new RateLimitTableEntity("identity", "organizationId", "organizationName", 100, 90, rateLimitReset, null);
             await this.gitHubRateLimiter.ExposedWaitIfNeededAsync(auth, tableEntity);
+        }
+
+        [TestMethod]
+        public void TestSetInitialVisibilityDelay()
+        {
+            TimeSpan ts = TimeSpan.FromMilliseconds(-5);
+            GitHubRateLimitException e = new GitHubRateLimitException(ts);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(0), e.GetHiddenTime());
         }
     }
 }
