@@ -98,7 +98,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
             PointCollectorInput pointCollectorInput = new PointCollectorInput()
             {
                 Url = url,
-                RecordType = DataContract.CommentInstanceRecordType,
+                RecordType = DataContract.CommitInstanceRecordType,
                 ApiName = DataContract.CommitInstanceApiName,
                 Repository = repository,
                 ResponseType = "Object",
