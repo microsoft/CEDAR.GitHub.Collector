@@ -24,6 +24,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Processor;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -150,6 +151,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             OrchestrationContext context = durableContext.GetInput<OrchestrationContext>();
             string requestBody = context.RequestBody;
             WebhookProcessorContext functionContext = context.Downgrade();
+            functionContext.CollectorIdentity = this.configManager.GetCollectorIdentity();
             WebhookProcessorContextWriter contextWriter = new WebhookProcessorContextWriter();
 
             JObject record = JObject.Parse(requestBody);
@@ -190,23 +192,18 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 ICache<RepositoryItemTableEntity> collectorCache = new AzureTableCache<RepositoryItemTableEntity>(telemetryClient, "github");
                 await collectorCache.InitializeAsync().ConfigureAwait(false);
 
-                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
-                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
 
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationName : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 90.0, this.apiDomain);
-                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Main, httpClient, organizationName, this.apiDomain);
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier: functionContext.EventType, functionContext, contextWriter, this.adlsClient.AdlsClient);
-                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, authentication, httpClient, recordWriters, eventsBookkeeper, recordsCache, collectorCache, telemetryClient, this.apiDomain);
+                    WebHookProcessor processor = new WebHookProcessor(requestBody, functionContext, recordWriters, eventsBookkeeper, recordsCache, collectorCache, pointCollectorCache, telemetryClient, this.apiDomain);
                     additionalTelemetryProperties = await processor.ProcessAsync().ConfigureAwait(false);
 
                     foreach (KeyValuePair<string, string> property in GetMainCollectorSessionStartEventProperties(functionContext, identifier: functionContext.EventType, functionContext.LogicAppRunId))
@@ -292,6 +289,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Delta.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -312,7 +310,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : RateLimitTableEntity.GlobalOrganizationId, rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : RateLimitTableEntity.GlobalOrganizationId, rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 85.0, this.apiDomain);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -370,6 +368,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Onboarding.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -388,7 +387,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain, throwOnRateLimit : true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -423,6 +422,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
                 outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
+            }
+            catch (GitHubRateLimitException exception)
+            {
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
+                CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
+                TimeSpan? timeToLive = null;
+                await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
@@ -469,6 +476,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.TrafficTimer.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
@@ -495,7 +503,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     string organizationLogin = organization.SelectToken("$.OrganizationLogin").Value<string>();
                     long organizationId = organization.SelectToken("$.OrganizationId").Value<long>();
 
-                    IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain);
+                    IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? organizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 85.0, this.apiDomain);
                     GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, StatsTrackerRefreshFrequency);
@@ -563,59 +571,30 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 TypeNameHandling = TypeNameHandling.None
             };
             Repository repositoryDetails = JsonConvert.DeserializeObject<Repository>(queueItem, serializerSettings);
-            FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             string identifier = $"Traffic";
 
             FunctionContext context = new FunctionContext()
             {
                 CollectorType = CollectorType.Traffic.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
                 FunctionStartDate = functionStartDate,
                 SessionId = sessionId,
                 InvocationId = executionContext.InvocationId.ToString(),
                 DequeueCount = dequeueCount,
             };
 
-            StatsTracker statsTracker = null;
-            string outputPaths = string.Empty;
             bool success = false;
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
 
-                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
-                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repositoryDetails.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain);
-                ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
-                await requestsCache.InitializeAsync().ConfigureAwait(false);
-                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
 
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Traffic, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
+                TrafficProcessor processor = new TrafficProcessor(telemetryClient, pointCollectorCache, this.apiDomain);
+                await processor.ProcessAsync(repositoryDetails).ConfigureAwait(false);
 
-                StorageManager storageManager;
-                List<IRecordWriter> recordWriters;
-                using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
-                {
-                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
-                    IRecordStatsTracker recordStatsTracker = null;
-
-                    foreach (IRecordWriter recordWriter in recordWriters)
-                    {
-                        recordWriter.SetOutputPathPrefix($"{repositoryDetails.OrganizationId}/{repositoryDetails.RepositoryId}");
-                        if (recordStatsTracker == null)
-                        {
-                            recordStatsTracker = recordWriter;
-                        }
-                    }
-
-                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
-
-                    TrafficProcessor processor = new TrafficProcessor(authentication, recordWriters, httpClient, telemetryClient, this.apiDomain);
-                    await processor.ProcessAsync(repositoryDetails).ConfigureAwait(false);
-                }
-
-                await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
-                outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
             }
             catch (Exception exception) when (!(exception is FatalException))
@@ -625,7 +604,104 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             finally
             {
-                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
+                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, string.Empty, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
+            }
+        }
+
+        [FunctionName("PointCollector")]
+        public Task PointCollector([QueueTrigger("pointcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
+        {
+            return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : string.Empty, dequeueCount);
+        }
+
+        [FunctionName("PointCollectorDri")]
+        public Task PointCollectorAdHoc([QueueTrigger("pointcollector-dri")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
+        {
+            return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : "-dri", dequeueCount);
+        }
+
+        public async Task ExecutePointCollectorAsync(string queueItem, ExecutionContext executionContext, ILogger logger, string queueSuffix, int dequeueCount)
+        {
+            DateTime functionStartDate = DateTime.UtcNow;
+            string sessionId = Guid.NewGuid().ToString();
+
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings()
+            {
+                TypeNameHandling = TypeNameHandling.None
+            };
+            PointCollectorInput pointCollectorInput = JsonConvert.DeserializeObject<PointCollectorInput>(queueItem, serializerSettings);
+
+            FunctionContext context = new FunctionContext()
+            {
+                CollectorType = CollectorType.Point.ToString(),
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
+                FunctionStartDate = functionStartDate,
+                SessionId = sessionId,
+                InvocationId = executionContext.InvocationId.ToString(),
+                DequeueCount = dequeueCount,
+            };
+
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            bool success = false;
+            string outputPaths = string.Empty;
+            Dictionary<string, string> sessionEndProperties = new Dictionary<string, string>();
+            StatsTracker statsTracker = null;
+            string identifier = "Point";
+            try
+            {
+                ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
+                await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
+                Repository repository = pointCollectorInput.Repository;
+                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
+                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repository.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
+                ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
+                await requestsCache.InitializeAsync().ConfigureAwait(false);
+                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
+                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Point, httpClient, repository.OrganizationLogin, this.apiDomain);
+
+                StorageManager storageManager;
+                List<IRecordWriter> recordWriters;
+                FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
+                using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
+                {
+                    // ToDo : lukegostling 9/10/2021, simplify init record writers (we no longer do ADLS direct ingestion)
+                    recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
+                    IRecordStatsTracker recordStatsTracker = null;
+
+                    foreach (IRecordWriter recordWriter in recordWriters)
+                    {
+                        recordWriter.SetOutputPathPrefix($"{repository.OrganizationId}/{repository.RepositoryId}");
+                        if (recordStatsTracker == null)
+                        {
+                            recordStatsTracker = recordWriter;
+                        }
+                    }
+
+                    statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
+                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient);
+                    await processor.ProcessAsync(pointCollectorInput).ConfigureAwait(false);
+                }
+                await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
+                outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
+                success = true;
+            }
+            catch (GitHubRateLimitException exception)
+            {
+                telemetryClient.TrackException(exception, "RateLimiterRequeue");
+                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
+                TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
+                TimeSpan? timeToLive = null;
+                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                telemetryClient.TrackException(exception);
+                throw;
+            }
+            finally
+            {
+                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, sessionEndProperties, success);
                 statsTracker?.Stop();
             }
         }

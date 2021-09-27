@@ -1,105 +1,76 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.CloudMine.Core.Collectors.Authentication;
-using Microsoft.CloudMine.Core.Collectors.Collector;
-using Microsoft.CloudMine.Core.Collectors.IO;
+using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
-using Microsoft.CloudMine.GitHub.Collectors.Web;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 {
     public class TrafficProcessor
     {
-        private readonly CollectorBase<GitHubCollectionNode> collector;
-
-        private readonly List<IRecordWriter> recordWriters;
-
+        private readonly ITelemetryClient telemetryClient;
+        private readonly ICache<PointCollectorTableEntity> pointCollectorCache;
         private readonly string apiDomain;
 
-        public TrafficProcessor(IAuthentication authentication,
-                                List<IRecordWriter> recordWriters,
-                                GitHubHttpClient httpClient,
-                                ITelemetryClient telemetryClient,
+        public TrafficProcessor(ITelemetryClient telemetryClient,
+                                ICache<PointCollectorTableEntity> pointCollectorCache,
                                 string apiDomain)
         {
-            this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
-            this.recordWriters = recordWriters;
+            this.telemetryClient = telemetryClient;
+            this.pointCollectorCache = pointCollectorCache;
             this.apiDomain = apiDomain;
         }
 
         public async Task ProcessAsync(Repository repository)
         {
-            Dictionary<string, JToken> additionalMetadata = new Dictionary<string, JToken>()
-            {
-                { "OrganizationId", repository.OrganizationId },
-                { "OrganizationLogin", repository.OrganizationLogin },
-                { "RepositoryId", repository.RepositoryId },
-                { "RepositoryName", repository.RepositoryName },
-            };
-
             // Referrers
-            GitHubCollectionNode referrersNode = new GitHubCollectionNode()
+            PointCollectorInput input = new PointCollectorInput()
             {
+                Url = InitialReferrersUrl(repository, this.apiDomain),
                 RecordType = DataContract.ReferrerInstanceRecordType,
                 ApiName = DataContract.ReferrersApiName,
-                GetInitialUrl = additionalMetadata => InitialReferrersUrl(repository, this.apiDomain),
-                AdditionalMetadata = additionalMetadata,
+                Repository = repository,
+                ResponseType = "Array",
             };
-            foreach(IRecordWriter recordWriter in this.recordWriters)
-            {
-                await recordWriter.NewOutputAsync(DataContract.ReferrerInstanceRecordType).ConfigureAwait(false);
-            }
-            await this.collector.ProcessAsync(referrersNode).ConfigureAwait(false);
+            await PointCollector.OffloadToPointCollector(input, this.pointCollectorCache, this.telemetryClient);
+
 
             // Views
-            GitHubCollectionNode viewsNode = new GitHubCollectionNode()
+            input = new PointCollectorInput()
             {
+                Url = InitialViewsUrl(repository, this.apiDomain),
                 RecordType = DataContract.ViewInstanceRecordType,
                 ApiName = DataContract.ViewsApiName,
-                GetInitialUrl = additionalMetadata => InitialViewsUrl(repository, this.apiDomain),
-                AdditionalMetadata = additionalMetadata,
-                ResponseType = typeof(JObject),
+                Repository = repository,
+                ResponseType = "Object",
             };
-            foreach (IRecordWriter recordWriter in this.recordWriters)
-            {
-                await recordWriter.NewOutputAsync(DataContract.ViewInstanceRecordType).ConfigureAwait(false);
-            }
-            await this.collector.ProcessAsync(viewsNode).ConfigureAwait(false);
+            await PointCollector.OffloadToPointCollector(input, this.pointCollectorCache, this.telemetryClient);
 
             // Clones
-            GitHubCollectionNode clonesNode = new GitHubCollectionNode()
+            input = new PointCollectorInput()
             {
+                Url = InitialClonesUrl(repository, this.apiDomain),
                 RecordType = DataContract.CloneInstanceRecordType,
                 ApiName = DataContract.ClonesApiName,
-                GetInitialUrl = additionalMetadata => InitialClonesUrl(repository, this.apiDomain),
-                AdditionalMetadata = additionalMetadata,
-                ResponseType = typeof(JObject),
+                Repository = repository,
+                ResponseType = "Object",
             };
-            foreach (IRecordWriter recordWriter in this.recordWriters)
-            {
-                await recordWriter.NewOutputAsync(DataContract.CloneInstanceRecordType).ConfigureAwait(false);
-            }
-            await this.collector.ProcessAsync(clonesNode).ConfigureAwait(false);
+            await PointCollector.OffloadToPointCollector(input, this.pointCollectorCache, this.telemetryClient);
 
             // Paths
-            GitHubCollectionNode pathsNode = new GitHubCollectionNode()
+            input = new PointCollectorInput()
             {
+                Url = InitialPathsUrl(repository, this.apiDomain),
                 RecordType = DataContract.PathInstanceRecordType,
                 ApiName = DataContract.PathsApiName,
-                GetInitialUrl = additionalMetadata => InitialPathsUrl(repository, this.apiDomain),
-                AdditionalMetadata = additionalMetadata,
+                Repository = repository,
+                ResponseType = "Array",
             };
-            foreach (IRecordWriter recordWriter in this.recordWriters)
-            {
-                await recordWriter.NewOutputAsync(DataContract.PathInstanceRecordType).ConfigureAwait(false);
-            }
-            await this.collector.ProcessAsync(pathsNode).ConfigureAwait(false);
+            await PointCollector.OffloadToPointCollector(input, this.pointCollectorCache, this.telemetryClient);
         }
 
         // ToDo: kivancm: response returns ETag for these APIs. If we prefer to call these APIs more frequently in the future, this could be used to optimize the amount of requests.

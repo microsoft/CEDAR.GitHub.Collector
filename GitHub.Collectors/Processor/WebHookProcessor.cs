@@ -1,14 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Context;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
-using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -23,11 +21,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
         
         private readonly string requestBody;
         private readonly WebhookProcessorContext context;
-        private readonly IAuthentication authentication;
-        private readonly GitHubHttpClient httpClient;
         private readonly List<IRecordWriter> recordWriters;
         private readonly IEventsBookkeeper eventsBookkeeper;
         private readonly ICache<RecordTableEntity> recordsCache;
+        private readonly ICache<PointCollectorTableEntity> pointCollectorCache;
         private readonly ICache<RepositoryItemTableEntity> collectorCache;
         private readonly ITelemetryClient telemetryClient;
         private readonly string apiDomain;
@@ -49,23 +46,21 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 
         public WebHookProcessor(string requestBody,
                                 WebhookProcessorContext context,
-                                IAuthentication authentication,
-                                GitHubHttpClient httpClient,
                                 List<IRecordWriter> recordWriters,
                                 IEventsBookkeeper eventsBookkeeper,
                                 ICache<RecordTableEntity> recordsCache,
                                 ICache<RepositoryItemTableEntity> collectorCache,
+                                ICache<PointCollectorTableEntity> pointCollectorCache,
                                 ITelemetryClient telemetryClient,
                                 string apiDomain)
         {
             this.requestBody = requestBody;
             this.context = context;
-            this.authentication = authentication;
-            this.httpClient = httpClient;
             this.recordWriters = recordWriters;
             this.eventsBookkeeper = eventsBookkeeper;
             this.recordsCache = recordsCache;
             this.collectorCache = collectorCache;
+            this.pointCollectorCache = pointCollectorCache;
             this.telemetryClient = telemetryClient;
             this.apiDomain = apiDomain;
         }
@@ -163,7 +158,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                 await recordWriter.WriteRecordAsync(record, recordContext).ConfigureAwait(false);
             }
 
-            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.authentication, this.httpClient, this.recordWriters, this.collectorCache, this.telemetryClient, this.apiDomain);
+            ICollector collector = CollectorFactory.Instance.GetCollector(eventType, this.context, this.collectorCache, this.pointCollectorCache, this.telemetryClient, this.apiDomain);
             await collector.ProcessWebhookPayloadAsync(record, repository).ConfigureAwait(false);
 
             Dictionary<string, string> additionalSessionEndProperties = new Dictionary<string, string>(this.RetrieveAdditionalPrimaryKeys(record))
