@@ -20,18 +20,15 @@ using System.Collections.Concurrent;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
-    public class GitHubAppAuthentication : IAuthentication
+    public class GitHubAppAuthentication : GitHubAppAuthenticationBase, IAuthentication
     {
         /// <summary>
         /// How long a JWT claim remains valid, in seconds.
         /// </summary>
         private const int JwtExpiry = 60 * 8; // 8 mins
 
-        private string organization;
         private GitHubHttpClient httpClient;
         private string apiDomain;
-        private readonly int appId;
-        private readonly string gitHubAppKeyVaultUri;
         private readonly bool useInteractiveLogin;
 
 
@@ -42,12 +39,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         private static ConcurrentDictionary<string, string> OrgNameToInstallationIdMap = new ConcurrentDictionary<string, string>();
 
         public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin)
+            : base(organization, appId, gitHubAppKeyVaultUri)
         {
-            this.appId = appId;
-            this.gitHubAppKeyVaultUri = gitHubAppKeyVaultUri;
             this.useInteractiveLogin = useInteractiveLogin;
             this.httpClient = httpClient;
-            this.organization = organization;
             this.apiDomain = apiDomain;
         }
 
@@ -57,9 +52,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
         public string Schema => "Bearer";
 
-        public async Task<string> GetAuthorizationHeaderAsync()
+        public override async Task<string> GetAuthorizationHeaderAsync()
         {
-            if (this.httpClient == null || this.organization == null || this.apiDomain == null)
+            if (this.httpClient == null || this.apiDomain == null)
             {
                 throw new FatalTerminalException("dependencies must be set before generating authorization header");
             }
@@ -73,13 +68,22 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                 }
             }
 
-            string jwt = this.CreateJwt();
-            string installationId = await this.FindInstallationId(jwt).ConfigureAwait(false);
-            string result = await this.ObtainPat(jwt, installationId).ConfigureAwait(false);
-            return result;
+            TokenCredential credential;
+            if (this.useInteractiveLogin)
+            {
+                credential = new InteractiveBrowserCredential();
+            }
+            else
+            {
+                credential = new ManagedIdentityCredential();
+            }
+
+            string jwt = CreateJwt(credential);
+            string token = await GetInstallationTokenAsync(jwt);
+            return token;
         }
 
-        private async Task<string> FindInstallationId(string jwt)
+        protected override async Task<string> FindInstallationId(string jwt)
         {
             if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out string cachedInstallationId))
             {
@@ -115,7 +119,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
         }
 
-        private async Task<string> ObtainPat(string jwt, string installationId)
+        protected override async Task<string> ObtainPat(string jwt, string installationId)
         {
             string requestUri = $"https://{this.apiDomain}/app/installations/{installationId}/access_tokens";
             IAuthentication jwtAuthentication = new JwtAuthentication(this.Identity + "-jwt", jwt);
@@ -133,19 +137,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         /// https://tools.ietf.org/html/rfc7519
         /// </summary>
         /// <returns>A string with the JWT required to authenticate with GitHub.</returns>
-        private string CreateJwt()
+        protected override string CreateJwt(TokenCredential credential)
         {
-            TokenCredential credential;
-
-            if (this.useInteractiveLogin)
-            {
-                credential = new InteractiveBrowserCredential();
-            }
-            else
-            {
-                credential = new ManagedIdentityCredential();
-            }
-
             CryptographyClient client = new CryptographyClient(new Uri(this.gitHubAppKeyVaultUri), credential);
             string jwtHeader = @"{""alg"":""RS256"",""typ"":""JWT""}";
 
