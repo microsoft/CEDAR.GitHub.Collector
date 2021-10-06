@@ -79,8 +79,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
 
             string jwt = CreateJwt(credential);
-            string token = await GetInstallationTokenAsync(jwt);
-            return token;
+            return await GetInstallationTokenAsync(jwt);
         }
 
         protected override async Task<string> FindInstallationId(string jwt)
