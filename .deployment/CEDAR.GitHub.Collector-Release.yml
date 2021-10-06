@@ -6,7 +6,8 @@ trigger:
 - main
 
 pool:
-  vmImage: 'windows-latest'
+  name: 'CloudMine'
+  vmImage: 'MerlinBotDefaultNetCore'
 
 steps:
 
@@ -69,3 +70,12 @@ steps:
   displayName: 'Publish Artifact: drop'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)\output'
+
+- task: ManifestGeneratorTask@0 # SBOM generator https://www.1eswiki.com/wiki/ADO_sbom_Generator
+  inputs:
+    BuildDropPath: '$(Build.ArtifactStagingDirectory)/'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: SBOM'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/_manifest'
