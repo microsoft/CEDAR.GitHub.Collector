@@ -20,17 +20,10 @@ using System.Collections.Concurrent;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
-    public class GitHubAppAuthentication : GitHubAppAuthenticationBase, IAuthentication
+    public class GitHubAppAuthentication : GitHubAppAuthenticationBase, IAuthentication, IGitHubAppAuthentication
     {
-        /// <summary>
-        /// How long a JWT claim remains valid, in seconds.
-        /// </summary>
-        private const int JwtExpiry = 60 * 8; // 8 mins
-
         private GitHubHttpClient httpClient;
         private string apiDomain;
-        private readonly bool useInteractiveLogin;
-
 
         /// <summary>
         /// Maps an organization name to a Tuple containing an expiry date and the token itself.
@@ -39,9 +32,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         private static ConcurrentDictionary<string, string> OrgNameToInstallationIdMap = new ConcurrentDictionary<string, string>();
 
         public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin)
-            : base(organization, appId, gitHubAppKeyVaultUri)
+            : base(organization, appId, gitHubAppKeyVaultUri, useInteractiveLogin)
         {
-            this.useInteractiveLogin = useInteractiveLogin;
             this.httpClient = httpClient;
             this.apiDomain = apiDomain;
         }
@@ -52,7 +44,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
         public string Schema => "Bearer";
 
-        public override async Task<string> GetAuthorizationHeaderAsync()
+        public Task<string> GetAuthorizationHeaderAsync()
         {
             if (this.httpClient == null || this.apiDomain == null)
             {
@@ -64,22 +56,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                 TimeSpan timeToRefresh = tokenEpiryAndToken.Item1.Subtract(TimeSpan.FromMinutes(15)).Subtract(DateTime.UtcNow);
                 if (timeToRefresh.TotalMilliseconds > 0)
                 {
-                    return tokenEpiryAndToken.Item2;
+                    return Task.FromResult<string>(tokenEpiryAndToken.Item2);
                 }
             }
 
-            TokenCredential credential;
-            if (this.useInteractiveLogin)
-            {
-                credential = new InteractiveBrowserCredential();
-            }
-            else
-            {
-                credential = new ManagedIdentityCredential();
-            }
-
-            string jwt = CreateJwt(credential);
-            return await GetInstallationTokenAsync(jwt);
+            string jwt = CreateJwt();
+            return GetAccessTokenAsync(jwt);
         }
 
         protected override async Task<string> FindInstallationId(string jwt)
@@ -136,31 +118,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         /// https://tools.ietf.org/html/rfc7519
         /// </summary>
         /// <returns>A string with the JWT required to authenticate with GitHub.</returns>
-        protected override string CreateJwt(TokenCredential credential)
+        private string CreateJwt()
         {
-            CryptographyClient client = new CryptographyClient(new Uri(this.gitHubAppKeyVaultUri), credential);
-            string jwtHeader = @"{""alg"":""RS256"",""typ"":""JWT""}";
-
-            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-            long now = (long)(DateTime.UtcNow - epoch).TotalSeconds;
-
-            string payload = @"{""iat"":" + now + @",""exp"":" + (now + JwtExpiry) + @",""iss"":" + this.appId + @"}";
-
-            string encodedHeader = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(jwtHeader));
-            string encodedPayload = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(payload));
-            string signature;
-
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                string jwtSigningBuffer = $"{encodedHeader}.{encodedPayload}";
-                byte[] digestBuffer = sha256.ComputeHash(Encoding.UTF8.GetBytes(jwtSigningBuffer));
-
-                SignResult signingResponse = client.Sign(SignatureAlgorithm.RS256, digestBuffer);
-                string base64string = WebEncoders.Base64UrlEncode(signingResponse.Signature);
-                signature = base64string;
-
-                return $"{encodedHeader}.{encodedPayload}.{signature}";
-            }
+            return CreateJwtBase(this.useInteractiveLogin ? null : new ManagedIdentityCredential());
         }
 
         private class JwtAuthentication : IAuthentication
