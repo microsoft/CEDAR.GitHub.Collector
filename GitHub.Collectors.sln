@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Collectors", "CEDAR.Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Collectors.Tests", "CEDAR.Core.Collector\Core.Collectors.Tests\Core.Collectors.Tests.csproj", "{AC2CC7AC-7CC7-435F-9EC5-6AB12098B7DC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Authentication", "GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj", "{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +90,18 @@ Global
 		{AC2CC7AC-7CC7-435F-9EC5-6AB12098B7DC}.Release|x64.Build.0 = Release|Any CPU
 		{AC2CC7AC-7CC7-435F-9EC5-6AB12098B7DC}.Release|x86.ActiveCfg = Release|Any CPU
 		{AC2CC7AC-7CC7-435F-9EC5-6AB12098B7DC}.Release|x86.Build.0 = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|x64.Build.0 = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Debug|x86.Build.0 = Debug|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x64.ActiveCfg = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x64.Build.0 = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x86.ActiveCfg = Release|Any CPU
+		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
