@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>Microsoft.CloudMine.GitHub.Collectors.Authentication</AssemblyName>
+    <RootNamespace>Microsoft.CloudMine.GitHub.Collectors.Authentication</RootNamespace>
+    <InformationalVersion>$(Build_BuildNumber)</InformationalVersion>
+    <SourceRevisionId>$(Build_SourceVersion)</SourceRevisionId>
+    <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.0.2" />
+    <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
+  </ItemGroup>
+</Project>

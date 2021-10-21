@@ -75,7 +75,7 @@ Create a storage queue named `onboarding`. To test the Onboarding function, onbo
     "OrganizationId": 6154722,
     "OrganizationLogin": "microsoft",
     "RepositoryId": 282058629,
-    "RepositoryName": "CEDAR.GitHub.Collector”,
+    "RepositoryName": "CEDAR.GitHub.Collector",
     "OnboardingType": "Repository",
     "IgnoreCache": true
 }
@@ -91,7 +91,7 @@ Create a storage queue named `traffic`. Test the Traffic function by adding the 
     "OrganizationId": 6154722,
     "OrganizationLogin": "microsoft",
     "RepositoryId": 282058629,
-    "RepositoryName": "CEDAR.GitHub.Collector”
+    "RepositoryName": "CEDAR.GitHub.Collector"
 }
 ```
 
