@@ -706,6 +706,28 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
         }
 
+
+        [FunctionName("AutoOnboard")]
+        public Task AutoOnboard([TimerTrigger("0 0 0 * * *")] TimerInfo timerInfo, ExecutionContext context)
+        {
+            return this.ExecuteAutoOnboardAsync();
+        }
+
+        private async Task ExecuteAutoOnboardAsync(ExecutionContext context)
+        {
+            DateTime functionStartDate = DateTime.UtcNow;
+            string sessionId = Guid.NewGuid().ToString();
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            bool success = true;
+            ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
+            await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
+            IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repository.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
+            ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
+            await requestsCache.InitializeAsync().ConfigureAwait(false);
+            GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
+
+        }
+
         private static Dictionary<string, string> GetRepositoryCollectorSessionStartEventProperties(FunctionContext context, string identifier, Repository repository)
         {
             return new Dictionary<string, string>(GetCollectorCommonSessionStartEventProperties(context, identifier))
