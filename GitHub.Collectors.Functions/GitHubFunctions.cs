@@ -16,6 +16,7 @@ using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Context;
@@ -708,24 +709,46 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
 
         [FunctionName("AutoOnboard")]
-        public Task AutoOnboard([TimerTrigger("0 0 0 * * *")] TimerInfo timerInfo, ExecutionContext context)
+        //public Task AutoOnboard([TimerTrigger("0 0 0 * * *")] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
+        public Task AutoOnboard([QueueTrigger("auto-onboard")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            return this.ExecuteAutoOnboardAsync();
+            return this.ExecuteAutoOnboardAsync(executionContext, logger);
         }
 
-        private async Task ExecuteAutoOnboardAsync(ExecutionContext context)
+        private async Task ExecuteAutoOnboardAsync(ExecutionContext executionContext, ILogger logger)
         {
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
+
+            FunctionContext context = new FunctionContext()
+            {
+                CollectorType = "AutoOnboard",
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
+                FunctionStartDate = functionStartDate,
+                SessionId = sessionId,
+                InvocationId = executionContext.InvocationId.ToString(),
+            };
+
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
-            bool success = true;
             ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
             await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-            IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? repository.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
+            IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
             ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
             await requestsCache.InitializeAsync().ConfigureAwait(false);
             GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-
+            GitHubAppAuthentication authentication = (GitHubAppAuthentication) this.configManager.GetAuthentication(CollectorType.AutoOnboard, httpClient, null, this.apiDomain);
+            JArray installations = await authentication.GetAppInstallations().ConfigureAwait(false);
+            JArray formattedInstallations = new JArray();
+            foreach (JObject installation in installations)
+            {
+                JObject formattedInstallation = new JObject();
+                formattedInstallation.Add("OrganizationLogin", installation.SelectToken("account.login"));
+                formattedInstallation.Add("OrganizationId", installation.SelectToken("account.id"));
+                formattedInstallations.Add(formattedInstallation);
+            }
+            formattedInstallations = new JArray(formattedInstallations.OrderBy(obj => (string)obj["OrganizationLogin"]));
+            string configurationString = formattedInstallations.ToString();
+            // ToDo : DO somthing with new configuration
         }
 
         private static Dictionary<string, string> GetRepositoryCollectorSessionStartEventProperties(FunctionContext context, string identifier, Repository repository)

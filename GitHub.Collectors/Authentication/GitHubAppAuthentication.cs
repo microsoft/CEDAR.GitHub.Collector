@@ -1,22 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.WebUtilities;
-using Azure.Security.KeyVault.Keys.Cryptography;
-using Microsoft.CloudMine.Core.Collectors.Error;
-using Azure.Core;
 using Azure.Identity;
-using System.Text;
-using System.Security.Cryptography;
-using System.Net.Http;
-using Microsoft.CloudMine.Core.Collectors.Web;
-using Newtonsoft.Json.Linq;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
+using Microsoft.CloudMine.Core.Collectors.Error;
+using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
@@ -64,7 +59,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             return GetAccessTokenAsync(jwt);
         }
 
-        protected override async Task<string> FindInstallationId(string jwt)
+        protected override async Task<string> FindInstallationId()
         {
             if (OrgNameToInstallationIdMap.TryGetValue(this.organization, out string cachedInstallationId))
             {
@@ -72,32 +67,44 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
             else
             {
-                string requestUri = $"https://{this.apiDomain}/app/installations?per_page=100";
-                BatchingGitHubHttpRequest batchingHttpClient = new BatchingGitHubHttpRequest(httpClient, requestUri, "App.Installations", new List<HttpResponseSignature>());
-
-                IAuthentication jwtAuthentication = new JwtAuthentication(this.Identity + "-jwt", jwt);
+                JArray installations = await GetAppInstallations().ConfigureAwait(false);          
                 string targetInstallationId = null;
 
-                while (batchingHttpClient.HasNext)
+                foreach (JObject installation in installations)
                 {
-                    HttpResponseMessage response = await batchingHttpClient.NextResponseAsync(jwtAuthentication).ConfigureAwait(false);
+                    string orgName = installation.SelectToken("$.account.login").Value<string>();
+                    string installationId = installation.SelectToken("$.id").Value<string>();
+                    OrgNameToInstallationIdMap[orgName] = installationId;
 
-                    JArray responseBody = await HttpUtility.ParseAsJArrayAsync(response).ConfigureAwait(false);
-                    foreach (JObject responseItem in responseBody)
+                    if (orgName.Equals(this.organization))
                     {
-                        string orgName = responseItem.SelectToken("$.account.login").Value<string>();
-                        string installationId = responseItem.SelectToken("$.id").Value<string>();
-                        OrgNameToInstallationIdMap[orgName] = installationId;
-
-                        if (orgName.Equals(this.organization))
-                        {
-                            targetInstallationId = installationId;
-                        }
+                        targetInstallationId = installationId;
                     }
                 }
 
                 return targetInstallationId ?? throw new FatalException($"Could not find installation id for organization {organization} with AppId {this.appId}");
             }
+        }
+
+        public async Task<JArray> GetAppInstallations()
+        {
+            string jwt = CreateJwt();
+            string requestUri = $"https://{this.apiDomain}/app/installations?per_page=100";
+            BatchingGitHubHttpRequest batchingHttpClient = new BatchingGitHubHttpRequest(this.httpClient, requestUri, "App.Installations", new List<HttpResponseSignature>());
+            IAuthentication jwtAuthentication = new JwtAuthentication(this.Identity + "-jwt", jwt);
+            JArray installations = new JArray();
+            //List<JObject> installations = new List<JObject>();
+            while (batchingHttpClient.HasNext)
+            {
+                HttpResponseMessage response = await batchingHttpClient.NextResponseAsync(jwtAuthentication).ConfigureAwait(false);
+                JArray responseBody = await HttpUtility.ParseAsJArrayAsync(response).ConfigureAwait(false);
+                foreach (JObject installation in responseBody)
+                {
+                    installations.Add(installation);
+                }
+            }
+
+            return installations;
         }
 
         protected override async Task<string> ObtainPat(string jwt, string installationId)

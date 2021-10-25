@@ -44,7 +44,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
                 throw new Exception("Organization must has value to get the installation access token.");
             }
 
-            string installationId = await FindInstallationId(jwt).ConfigureAwait(false);
+            string installationId = await FindInstallationId().ConfigureAwait(false);
             return await ObtainPat(jwt, installationId).ConfigureAwait(false);
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
         }
 
-        protected abstract Task<string> FindInstallationId(string jwt = null);
+        protected abstract Task<string> FindInstallationId();
 
         protected abstract Task<string> ObtainPat(string jwt, string installationId);
     }
