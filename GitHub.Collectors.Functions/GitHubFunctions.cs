@@ -26,15 +26,18 @@ using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
@@ -749,6 +752,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             formattedInstallations = new JArray(formattedInstallations.OrderBy(obj => (string)obj["OrganizationLogin"]));
             string configurationString = formattedInstallations.ToString();
             // ToDo : DO somthing with new configuration
+            CloudBlobContainer outContainer = await AzureHelpers.GetStorageContainerAsync("github-settings").ConfigureAwait(false);
+            CloudBlockBlob outputBlob = outContainer.GetBlockBlobReference($"generated-organizations.json");
+            CloudBlobStream cloudBlobStream = await outputBlob.OpenWriteAsync().ConfigureAwait(false);
+            StreamWriter writer = new StreamWriter(cloudBlobStream, Encoding.UTF8);
+            await writer.WriteLineAsync(configurationString).ConfigureAwait(false);
+            writer.Dispose();
         }
 
         private static Dictionary<string, string> GetRepositoryCollectorSessionStartEventProperties(FunctionContext context, string identifier, Repository repository)
