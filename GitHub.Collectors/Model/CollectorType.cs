@@ -11,6 +11,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Model
         TrafficTimer,
         Traffic,
         Point,
-        AutoOnboard,
+        DiscoverOrganizations,
     }
 }
