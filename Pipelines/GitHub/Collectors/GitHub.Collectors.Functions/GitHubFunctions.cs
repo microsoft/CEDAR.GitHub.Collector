@@ -16,6 +16,7 @@ using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Context;
@@ -25,15 +26,19 @@ using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
@@ -703,6 +708,128 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             {
                 SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, sessionEndProperties, success);
                 statsTracker?.Stop();
+            }
+        }
+
+        [FunctionName("DiscoverOrganizationsTimer")]
+        public Task AutoOnboard([TimerTrigger("0 0 8 * * *") /* execute once per day at midnight (PST)*/] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
+        {
+            return this.ExecuteAutoOnboardAsync(executionContext, logger);
+        }
+
+        [FunctionName("DiscoverOrganizations")]
+        public Task AutoOnboardDri([QueueTrigger("discover-organizations")] string queueItem, ExecutionContext executionContext, ILogger logger)
+        {
+            return this.ExecuteAutoOnboardAsync(executionContext, logger);
+        }
+
+        private async Task ExecuteAutoOnboardAsync(ExecutionContext executionContext, ILogger logger)
+        {
+            DateTime functionStartDate = DateTime.UtcNow;
+            string sessionId = Guid.NewGuid().ToString();
+
+            FunctionContext context = new FunctionContext()
+            {
+                CollectorType = "DiscoverOrganizations",
+                CollectorIdentity = this.configManager.GetCollectorIdentity(),
+                FunctionStartDate = functionStartDate,
+                SessionId = sessionId,
+                InvocationId = executionContext.InvocationId.ToString(),
+            };
+
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            try
+            {
+                ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
+                await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
+                IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 100, this.apiDomain, throwOnRateLimit: true);
+                ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
+                await requestsCache.InitializeAsync().ConfigureAwait(false);
+                GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
+                IAuthentication auth = this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
+
+                // get existing organizations
+                string existingOrganizations = "[]";
+                try
+                {
+                    existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "generated-organizations.json").ConfigureAwait(false);
+                }
+                catch (StorageException)
+                {
+                    existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
+                }
+                
+                // check that collector functions are using github app authentication.
+                if (!(auth is GitHubAppAuthentication))
+                {
+                    Dictionary<string, string> properties = new Dictionary<string, string>()
+                    {
+                        { "Collector", CollectorType.DiscoverOrganizations.ToString() }
+                    };
+                    telemetryClient.TrackEvent("Invalid Authentication", properties);
+                    return;
+                }
+
+                // get all organizations where the GitHub app is installed.
+                GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
+                List<JObject> installations = await githubAuth.GetAppInstallations().ConfigureAwait(false);
+
+                // build configuration.json from organizations in JArray.
+                JArray formattedInstallations = new JArray();
+                Dictionary<int, string> discoveredOrganizationMap = new Dictionary<int, string>();
+                foreach (JObject installation in installations)
+                {
+                    JObject formattedInstallation = new JObject();
+                    formattedInstallation.Add("OrganizationLogin", installation.SelectToken("account.login"));
+                    formattedInstallation.Add("OrganizationId", installation.SelectToken("account.id"));
+                    formattedInstallations.Add(formattedInstallation);
+
+                    int id = installation.SelectToken("account.id").Value<int>();
+                    string login = installation.SelectToken("account.login").Value<string>();
+
+                    discoveredOrganizationMap[id] = login;
+                }
+
+                formattedInstallations = new JArray(formattedInstallations.OrderBy(formattedInstallation => (string)formattedInstallation["OrganizationLogin"]));
+                string configurationString = formattedInstallations.ToString(Formatting.Indented);
+
+                // output to blob.
+                 await AzureHelpers.WriteToBlob("github-settings", "generated-organizations.json", configurationString).ConfigureAwait(false);
+
+                // find organization diff.
+                
+                JArray organizationsArray = JArray.Parse(existingOrganizations);
+
+                foreach (JObject organization in organizationsArray)
+                {
+                    int id = organization.SelectToken("OrganizationId").Value<int>();
+                    if( discoveredOrganizationMap.ContainsKey(id) )
+                    {
+                        discoveredOrganizationMap.Remove(id);
+                    }
+                }
+
+                // add messages to auto-onbaording queue (moved manually to onboarding after PR is merged)
+                foreach (int id in discoveredOrganizationMap.Keys )
+                {
+                    OnboardingInput onboardingInput = new OnboardingInput()
+                    {
+                        OnboardingType = OnboardingType.Repository,
+                        OrganizationId = id,
+                        OrganizationLogin = discoveredOrganizationMap[id]
+                    };
+
+                    CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding-auto").ConfigureAwait(false);
+                    IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
+                    await onboardingQueue.PutObjectAsJsonStringAsync(onboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
+                }
+
+
+            }
+            catch (Exception exception)
+            {
+                telemetryClient.TrackException(exception);
+                throw;
             }
         }
 
