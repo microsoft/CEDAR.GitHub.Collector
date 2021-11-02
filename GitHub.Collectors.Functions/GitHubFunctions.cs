@@ -38,6 +38,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
@@ -710,13 +711,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
         }
 
-        [FunctionName("DiscoverOrganizations")]
-        public Task AutoOnboard([TimerTrigger("0 0 0 * * *") /* execute once per day at midnight*/] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
+        [FunctionName("DiscoverOrganizationsTimer")]
+        public Task AutoOnboard([TimerTrigger("0 0 8 * * *") /* execute once per day at midnight (PST)*/] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
             return this.ExecuteAutoOnboardAsync(executionContext, logger);
         }
 
-        [FunctionName("DiscoverOrganizations-Dri")]
+        [FunctionName("DiscoverOrganizations")]
         public Task AutoOnboardDri([QueueTrigger("discover-organizations")] string queueItem, ExecutionContext executionContext, ILogger logger)
         {
             return this.ExecuteAutoOnboardAsync(executionContext, logger);
@@ -741,22 +742,37 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             {
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 80.0, this.apiDomain, throwOnRateLimit: true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 100, this.apiDomain, throwOnRateLimit: true);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
                 IAuthentication auth = this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
 
+                // get existing organizations
+                string existingOrganizations = "[]";
+                try
+                {
+                    existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "generated-organizations.json").ConfigureAwait(false);
+                }
+                catch (StorageException)
+                {
+                    existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
+                }
+                
                 // check that collector functions are using github app authentication.
                 if (!(auth is GitHubAppAuthentication))
                 {
-                    telemetryClient.LogWarning("Discover Organizations requires that authentication be of type GitHubAppAuthentication.");
+                    Dictionary<string, string> properties = new Dictionary<string, string>()
+                    {
+                        { "Collector", CollectorType.DiscoverOrganizations.ToString() }
+                    };
+                    telemetryClient.TrackEvent("Invalid Authentication", properties);
                     return;
                 }
 
                 // get all organizations where the GitHub app is installed.
                 GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
-                JArray installations = await githubAuth.GetAppInstallations().ConfigureAwait(false);
+                List<JObject> installations = await githubAuth.GetAppInstallations().ConfigureAwait(false);
 
                 // build configuration.json from organizations in JArray.
                 JArray formattedInstallations = new JArray();
@@ -774,19 +790,15 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     discoveredOrganizationMap[id] = login;
                 }
 
-                formattedInstallations = new JArray(formattedInstallations.OrderBy(obj => (string)obj["OrganizationLogin"]));
-                string configurationString = formattedInstallations.ToString();
+                formattedInstallations = new JArray(formattedInstallations.OrderBy(formattedInstallation => (string)formattedInstallation["OrganizationLogin"]));
+                string configurationString = formattedInstallations.ToString(Formatting.Indented);
 
                 // output to blob.
-                CloudBlockBlob outputBlob = AzureHelpers.GetBlob("github-settings", "generated-organizations.json");
-                CloudBlobStream cloudBlobStream = await outputBlob.OpenWriteAsync().ConfigureAwait(false);
-                StreamWriter writer = new StreamWriter(cloudBlobStream, Encoding.UTF8);
-                await writer.WriteLineAsync(configurationString).ConfigureAwait(false);
-                writer.Dispose();
+                 await AzureHelpers.WriteToBlob("github-settings", "generated-organizations.json", configurationString).ConfigureAwait(false);
 
                 // find organization diff.
-                string organizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
-                JArray organizationsArray = JArray.Parse(organizations);
+                
+                JArray organizationsArray = JArray.Parse(existingOrganizations);
 
                 foreach (JObject organization in organizationsArray)
                 {
@@ -813,7 +825,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 }
 
 
-            } catch (Exception exception)
+            }
+            catch (Exception exception)
             {
                 telemetryClient.TrackException(exception);
                 throw;

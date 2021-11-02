@@ -67,7 +67,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
             else
             {
-                JArray installations = await GetAppInstallations().ConfigureAwait(false);          
+                List<JObject> installations = await this.GetAppInstallations().ConfigureAwait(false);          
                 string targetInstallationId = null;
 
                 foreach (JObject installation in installations)
@@ -86,14 +86,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             }
         }
 
-        public async Task<JArray> GetAppInstallations()
+        public async Task<List<JObject>> GetAppInstallations()
         {
             string jwt = CreateJwt();
             string requestUri = $"https://{this.apiDomain}/app/installations?per_page=100";
             BatchingGitHubHttpRequest batchingHttpClient = new BatchingGitHubHttpRequest(this.httpClient, requestUri, "App.Installations", new List<HttpResponseSignature>());
             IAuthentication jwtAuthentication = new JwtAuthentication(this.Identity + "-jwt", jwt);
-            JArray installations = new JArray();
-            //List<JObject> installations = new List<JObject>();
+            List<JObject> installations = new List<JObject>();
             while (batchingHttpClient.HasNext)
             {
                 HttpResponseMessage response = await batchingHttpClient.NextResponseAsync(jwtAuthentication).ConfigureAwait(false);
