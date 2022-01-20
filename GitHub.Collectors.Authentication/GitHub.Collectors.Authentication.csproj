@@ -6,6 +6,7 @@
     <InformationalVersion>$(Build_BuildNumber)</InformationalVersion>
     <SourceRevisionId>$(Build_SourceVersion)</SourceRevisionId>
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.2" />
