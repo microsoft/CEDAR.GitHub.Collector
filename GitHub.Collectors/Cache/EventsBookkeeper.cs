@@ -4,13 +4,13 @@
 using Microsoft.CloudMine.Core.Collectors.IO;
 using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
+using Azure.Storage.Queues;
+using Azure.Data.Tables;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Azure;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Cache
 {
@@ -18,8 +18,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
     {
         private readonly ITelemetryClient telemetryClient;
 
-        private CloudTable table;
-        private CloudQueue queue;
+        private TableClient table;
+        private QueueClient queue;
         private bool initialized;
 
         public EventsBookkeeper(ITelemetryClient telemetryClient)
@@ -44,36 +44,33 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         public Task SignalCountAsync(Repository eventStats)
         {
             string message = JsonConvert.SerializeObject(eventStats, Formatting.None);
-            return this.queue.AddMessageAsync(new CloudQueueMessage(message));
+            return this.queue.SendMessageAsync(message);
         }
 
         public Task ResetCountAsync(Repository repository)
         {
-            TableOperation replaceOperation = TableOperation.Replace(new EventStatsTableEntity(repository, 0, eTag: "*"));
-            return this.table.ExecuteAsync(replaceOperation);
+            return this.table.UpsertEntityAsync<EventStatsTableEntity>(new EventStatsTableEntity(repository, 0, new ETag("*")), TableUpdateMode.Replace);
         }
 
         public async Task<int> IncrementCountAsync(Repository repository)
         {
             string partitionKey = $"{repository.OrganizationId}_{repository.RepositoryId}";
             string rowKey = string.Empty;
-            TableOperation retrieveOperation = TableOperation.Retrieve<EventStatsTableEntity>(partitionKey, rowKey);
             try
             {
-                TableResult retrieveResult = await this.table.ExecuteAsync(retrieveOperation).ConfigureAwait(false);
-                int retrieveStatusCode = retrieveResult.HttpStatusCode;
+                var retrieveResult = await this.table.GetEntityAsync<EventStatsTableEntity>(partitionKey, rowKey).ConfigureAwait(false);
+                int retrieveStatusCode = retrieveResult.GetRawResponse().Status;
                 if (retrieveStatusCode == 404) // Not found
                 {
-                    TableOperation insertOperation = TableOperation.Insert(new EventStatsTableEntity(repository, eventCount: 1));
                     try
                     {
-                        await this.table.ExecuteAsync(insertOperation).ConfigureAwait(false);
+                        await this.table.UpsertEntityAsync<EventStatsTableEntity>(new EventStatsTableEntity(repository, eventCount: 1), TableUpdateMode.Merge).ConfigureAwait(false);
                         return 1;
                     }
-                    catch (Exception insertException) when (insertException is StorageException)
+                    catch (Exception insertException) when (insertException is RequestFailedException)
                     {
-                        StorageException insertStorageException = (StorageException)insertException;
-                        int insertStatusCode = insertStorageException.RequestInformation.HttpStatusCode;
+                        RequestFailedException insertStorageException = (RequestFailedException)insertException;
+                        int insertStatusCode = insertStorageException.Status;
                         if (insertStatusCode == 409) // Conflict
                         {
                             // We were too late to insert, so someone else did it. Retry.
@@ -94,20 +91,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
                 }
                 else if (retrieveStatusCode == 200)
                 {
-                    EventStatsTableEntity retrieveStats = (EventStatsTableEntity)retrieveResult.Result;
-                    string retrieveETag = retrieveResult.Etag;
+                    EventStatsTableEntity retrieveStats = (EventStatsTableEntity)retrieveResult.Value;
+                    ETag retrieveETag = retrieveResult.Value.ETag;
 
                     int currentEventCount = retrieveStats.EventCount;
-                    TableOperation replaceOperation = TableOperation.Replace(new EventStatsTableEntity(repository, currentEventCount + 1, retrieveETag));
                     try
                     {
-                        await this.table.ExecuteAsync(replaceOperation).ConfigureAwait(false);
+                        await this.table.UpsertEntityAsync<EventStatsTableEntity>(new EventStatsTableEntity(repository, currentEventCount + 1, retrieveETag), TableUpdateMode.Replace).ConfigureAwait(false);
                         return currentEventCount + 1;
                     }
-                    catch (Exception replaceException) when (replaceException is StorageException)
+                    catch (Exception replaceException) when (replaceException is RequestFailedException)
                     {
-                        StorageException replaceStorageException = (StorageException)replaceException;
-                        int replaceStatusCode = replaceStorageException.RequestInformation.HttpStatusCode;
+                        RequestFailedException replaceStorageException = (RequestFailedException)replaceException;
+                        int replaceStatusCode = replaceStorageException.Status;
                         if (replaceStatusCode == 412) // Pre-condition failed
                         {
                             // We were too late to update, so someone else did it. Retry.
@@ -152,13 +148,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
             return 0;
         }
 
-        public class EventStatsTableEntity : TableEntity
+        public class EventStatsTableEntity : ITableEntity
         {
             public long OrganizationId { get; set; }
             public long RepositoryId { get; set; }
             public string OrganizationLogin { get; set; }
             public string RepositoryName { get; set; }
             public int EventCount { get; set; }
+            public string PartitionKey { get; set; }
+            public string RowKey { get; set; }
+            public DateTimeOffset? Timestamp { get; set; }
+            public ETag ETag { get; set; }
 
             public EventStatsTableEntity()
             {
@@ -176,7 +176,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
                 this.EventCount = eventCount;
             }
 
-            public EventStatsTableEntity(Repository repository, int eventCount, string eTag)
+            public EventStatsTableEntity(Repository repository, int eventCount, ETag eTag)
                 : this (repository, eventCount)
             {
                 this.ETag = eTag;

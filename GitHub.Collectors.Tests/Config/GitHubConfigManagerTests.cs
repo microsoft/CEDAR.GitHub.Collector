@@ -88,7 +88,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             FunctionContext functionContext = new FunctionContext();
             FunctionContextWriter<FunctionContext> contextWriter = new FunctionContextWriter<FunctionContext>();
             AdlsClientWrapper adlsClientWrapper = new AdlsClientWrapper(this.jsonInput);
-            List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter, adlsClientWrapper.serviceClient);
+            List<IRecordWriter> recordWriters = storageManager.InitializeRecordWriters(identifier, functionContext, contextWriter, adlsClientWrapper.AdlsClient);
             Assert.AreEqual(2, recordWriters.Count);
             Assert.IsTrue(recordWriters[0] is AdlsBulkRecordWriter<FunctionContext>);
             Assert.IsTrue(recordWriters[1] is AzureBlobRecordWriter<FunctionContext>);

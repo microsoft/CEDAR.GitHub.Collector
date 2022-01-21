@@ -8,6 +8,9 @@
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
   </ItemGroup>
   <ItemGroup>
