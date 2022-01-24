@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
+    <ProjectReference Include="..\GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="local.settings.json">
