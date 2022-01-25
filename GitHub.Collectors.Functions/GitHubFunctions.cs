@@ -31,13 +31,11 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Azure;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
@@ -752,7 +750,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 {
                     existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "generated-organizations.json").ConfigureAwait(false);
                 }
-                catch (StorageException)
+                catch (RequestFailedException)
                 {
                     existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
                 }
@@ -817,7 +815,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                         OrganizationLogin = discoveredOrganizationMap[id]
                     };
 
-                    CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding-auto").ConfigureAwait(false);
+                    QueueClient onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding-auto").ConfigureAwait(false);
                     IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
                     await onboardingQueue.PutObjectAsJsonStringAsync(onboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
                 }
