@@ -6,11 +6,13 @@
     <InformationalVersion>$(Build_BuildNumber)</InformationalVersion>
     <SourceRevisionId>$(Build_SourceVersion)</SourceRevisionId>
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.2" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="5.0.1" />
   </ItemGroup>
 </Project>
