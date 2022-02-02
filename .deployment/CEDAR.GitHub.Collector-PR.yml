@@ -35,9 +35,9 @@ steps:
     nugetConfigPath: 'NuGet.config'
 
 - task: UseDotNet@2
-  displayName: 'Use .Net Core sdk 5.0.13'
+  displayName: 'Use .Net Core sdk 3.0'
   inputs:
-    version: 5.0.13
+    version: 3.1.200
     installationPath: '$(Agent.ToolsDirectory)\dotnet'
 
 - task: DotNetCoreCLI@2
