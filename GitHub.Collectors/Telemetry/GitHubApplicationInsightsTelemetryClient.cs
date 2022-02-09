@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 using Microsoft.ApplicationInsights;
+using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Context;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
