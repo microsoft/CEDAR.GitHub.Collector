@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
-    public class DefaultCollector : ICollector    {
+    public class DefaultCollector : ICollector
+    {
         protected ICache<PointCollectorTableEntity> PointCollectorCache { get; }
         protected readonly ITelemetryClient telemetryClient;
 

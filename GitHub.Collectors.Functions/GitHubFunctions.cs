@@ -14,32 +14,28 @@ using Microsoft.CloudMine.Core.Collectors.Config;
 using Microsoft.CloudMine.Core.Collectors.Context;
 using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.IO;
-using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Context;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Processor;
+using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
