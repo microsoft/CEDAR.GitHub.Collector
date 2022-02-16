@@ -20,7 +20,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Collectors.Tests", "CE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Authentication", "GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj", "{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Telemetry", "..\..\Core\Collectors\Core.Telemetry\Core.Telemetry.csproj", "{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Telemetry", "CEDAR.Core.Collector\Core.Telemetry\Core.Telemetry.csproj", "{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
