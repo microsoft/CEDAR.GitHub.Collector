@@ -2,8 +2,7 @@
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.Cache;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
-using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Newtonsoft.Json.Linq;
@@ -11,8 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Model
 {
-    public class DefaultCollector : ICollector
-    {
+    public class DefaultCollector : ICollector    {
         protected ICache<PointCollectorTableEntity> PointCollectorCache { get; }
         protected readonly ITelemetryClient telemetryClient;
 
