@@ -2,8 +2,7 @@
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.Cache;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
-using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Newtonsoft.Json.Linq;

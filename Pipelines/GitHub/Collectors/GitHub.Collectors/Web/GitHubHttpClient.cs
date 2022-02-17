@@ -12,7 +12,7 @@ using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.Error;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Newtonsoft.Json;

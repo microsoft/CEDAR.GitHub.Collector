@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
