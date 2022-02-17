@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
+
 namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 {
     public class PointCollector
