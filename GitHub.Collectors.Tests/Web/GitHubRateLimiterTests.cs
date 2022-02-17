@@ -1,6 +1,6 @@
 ﻿using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Web;
 using Microsoft.CloudMine.Core.Collectors.Web;

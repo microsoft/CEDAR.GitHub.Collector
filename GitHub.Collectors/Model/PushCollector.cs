@@ -3,7 +3,7 @@
 
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Context;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;

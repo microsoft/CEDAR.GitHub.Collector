@@ -20,6 +20,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Collectors.Tests", "CE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHub.Collectors.Authentication", "GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj", "{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Telemetry", "CEDAR.Core.Collector\Core.Telemetry\Core.Telemetry.csproj", "{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,18 @@ Global
 		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x64.Build.0 = Release|Any CPU
 		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x86.ActiveCfg = Release|Any CPU
 		{BCAE786F-8567-42D4-9AC9-0D6F54F501B7}.Release|x86.Build.0 = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|x64.Build.0 = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Debug|x86.Build.0 = Debug|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|x64.ActiveCfg = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|x64.Build.0 = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|x86.ActiveCfg = Release|Any CPU
+		{2F6E4E52-B36F-498F-A7F2-40C16A1CE1D8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
