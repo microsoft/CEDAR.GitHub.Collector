@@ -8,6 +8,9 @@
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Cloud.InstrumentationFramework" Version="3.3.4.1" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Collectors\Core.Auditing\Core.Auditing.csproj" />
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
     <ProjectReference Include="..\GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj" />
