@@ -16,6 +16,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Tests.Helpers;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using Microsoft.CloudMine.Core.Auditing;
 
 namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
 {
@@ -77,7 +78,8 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             
             string organization = "Organization";
             string apiDomain = configManager.GetApiDomain();
-            Assert.IsTrue(this.configManager.GetAuthentication(CollectorType.Onboarding, this.httpClient, organization, apiDomain) is GitHubAppAuthentication);
+            IAuditLogger auditLogger = new IfxAuditLogger();
+            Assert.IsTrue(this.configManager.GetAuthentication(CollectorType.Onboarding, this.httpClient, organization, apiDomain, this.telemetryClient, auditLogger) is GitHubAppAuthentication);
         }
 
         [TestMethod]

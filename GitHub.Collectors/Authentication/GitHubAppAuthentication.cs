@@ -2,9 +2,12 @@
 // Licensed under the MIT License.
 
 using Azure.Identity;
+using Microsoft.Cloud.InstrumentationFramework;
+using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
 using System;
@@ -17,8 +20,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 {
     public class GitHubAppAuthentication : GitHubAppAuthenticationBase, IAuthentication, IGitHubAppAuthentication
     {
+        private const string TokenType = "GitHubApp";
         private GitHubHttpClient httpClient;
         private string apiDomain;
+        private readonly IAuditLogger auditLogger;
+        private readonly ITelemetryClient telemetryClient;
 
         /// <summary>
         /// Maps an organization name to a Tuple containing an expiry date and the token itself.
@@ -26,11 +32,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         private static ConcurrentDictionary<string, Tuple<DateTime, string>> TokenCache = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
         private static ConcurrentDictionary<string, string> OrgNameToInstallationIdMap = new ConcurrentDictionary<string, string>();
 
-        public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin)
+        public GitHubAppAuthentication(int appId, GitHubHttpClient httpClient, string organization, string apiDomain, string gitHubAppKeyVaultUri, bool useInteractiveLogin, IAuditLogger auditLogger, ITelemetryClient telemetryClient)
             : base(organization, appId, gitHubAppKeyVaultUri, useInteractiveLogin)
         {
             this.httpClient = httpClient;
             this.apiDomain = apiDomain;
+            this.telemetryClient = telemetryClient;
+            this.auditLogger = auditLogger;
         }
 
         public Dictionary<string, string> AdditionalWebRequestHeaders => new Dictionary<string, string>();
@@ -117,6 +125,21 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
             TokenCache[this.organization] = new Tuple<DateTime, string>(expiresAt, token);
             return token;
+        }
+
+        private void LogTokenGenerationEvent()
+        {
+            string callerIdentity = this.Identity.Substring(0, 4); // For security reasons, include only the first 4 characters.
+
+            TargetResource[] targetResources = new TargetResource[]
+            {
+                        new TargetResource("Organization", this.organization),
+            };
+            CallerIdentity[] callerIdentities = new CallerIdentity[]
+            {
+                        new CallerIdentity(CallerIdentityType.ApplicationID, callerIdentity),
+            };
+            this.auditLogger.LogTokenGenerationAuditEvent(telemetryClient, OperationResult.Success, targetResources, callerIdentities, TokenType);
         }
 
         /// <summary>
