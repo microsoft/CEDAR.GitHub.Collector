@@ -8,7 +8,6 @@
     <AssemblyVersion>$(Build_BuildNumber)</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\Collectors\Core.Auditing\Core.Auditing.csproj" />
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
     <ProjectReference Include="..\GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj" />
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Telemetry\Core.Telemetry.csproj" />
