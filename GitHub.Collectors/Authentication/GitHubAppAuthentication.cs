@@ -120,6 +120,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             IAuthentication jwtAuthentication = new JwtAuthentication(this.Identity + "-jwt", jwt);
             JObject responseBody = await this.httpClient.PostAndParseAsJObjectAsync(requestUri, string.Empty, jwtAuthentication, "App.Installations", new List<HttpResponseSignature>()).ConfigureAwait(false);
 
+            LogTokenGenerationEvent();
+
             string token = responseBody.SelectToken("$.token").Value<string>();
             DateTime expiresAt = DateTime.Parse(responseBody.SelectToken("$.expires_at").Value<string>());
 
