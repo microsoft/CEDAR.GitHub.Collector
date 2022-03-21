@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GitHub.Collectors\GitHub.Collectors.csproj" />
+    <ProjectReference Include="..\CEDAR.Core.Collector\Core.Auditing\Core.Auditing.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
