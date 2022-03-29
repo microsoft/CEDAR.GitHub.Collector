@@ -37,7 +37,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
             this.PreviousIdentity = null;
         }
 
-        public async Task<HttpResponseMessage> NextResponseAsync(IAuthentication authentication)
+        public async Task<RequestResult> NextResponseAsync(IAuthentication authentication)
         {
             if (!this.HasNext)
             {
@@ -71,7 +71,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 }
             }
 
-            return response;
+            return new RequestResult(response);
         }
 
         public void UpdateAvailability(JObject response, int recordCount)
