@@ -51,7 +51,7 @@ steps:
   inputs:
     command: test
     projects: 'GitHub.Collectors.sln'
-    arguments: '--configuration $(buildConfiguration) --no-restore --collect "Code coverage"'
+    arguments: '-c Release --no-restore --collect "Code coverage"'
 
 - task: ArchiveFiles@2
   displayName: 'Archive GitHub collectors'
