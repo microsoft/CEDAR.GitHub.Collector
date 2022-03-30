@@ -95,7 +95,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
             List<JObject> installations = new List<JObject>();
             while (batchingHttpClient.HasNext)
             {
-                HttpResponseMessage response = await batchingHttpClient.NextResponseAsync(jwtAuthentication).ConfigureAwait(false);
+                RequestResult result = await batchingHttpClient.NextResponseAsync(jwtAuthentication).ConfigureAwait(false);
+                HttpResponseMessage response = result.response;
                 JArray responseBody = await HttpUtility.ParseAsJArrayAsync(response).ConfigureAwait(false);
                 foreach (JObject installation in responseBody)
                 {
