@@ -71,7 +71,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Web
                 }
             }
 
-            return new RequestResult(response.RequestMessage, response);
+            return new RequestResult(response);
         }
 
         public void UpdateAvailability(JObject response, int recordCount)
