@@ -9,6 +9,7 @@ using Microsoft.CloudMine.Core.Collectors.IO;
 using System;
 using Microsoft.Azure.WebJobs.Host.Queues;
 using Microsoft.CloudMine.Core.Collectors.Collector;
+using Microsoft.CloudMine.Core.Auditing;
 
 [assembly: FunctionsStartup(typeof(Microsoft.CloudMine.GitHub.Collectors.Functions.ServiceStartup))]
 
@@ -38,6 +39,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
             builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
             builder.Services.AddSingleton<IQueueProcessorFactory, CustomQueueProcessorFactory>();
+            builder.Services.AddSingleton<IAuditLogger, IfxAuditLogger>();
         }
     }
 }
