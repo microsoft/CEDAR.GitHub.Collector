@@ -7,6 +7,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
@@ -14,8 +15,8 @@ using Microsoft.CloudMine.Core.Collectors.Config;
 using Microsoft.CloudMine.Core.Collectors.Context;
 using Microsoft.CloudMine.Core.Collectors.Error;
 using Microsoft.CloudMine.Core.Collectors.IO;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
@@ -48,9 +49,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         private readonly IHttpClient httpClient;
         private readonly IAdlsClient adlsClient;
         private readonly GitHubConfigManager configManager;
+        private readonly IAuditLogger ifxLogger;
 
         // Using dependency injection will guarantee that you use the same configuration for telemetry collected automatically and manually.
-        public GitHubFunctions(TelemetryConfiguration telemetryConfiguration, IHttpClient httpClient, IAdlsClient adlsClient, GitHubConfigManager configManager)
+        public GitHubFunctions(TelemetryConfiguration telemetryConfiguration, IHttpClient httpClient, IAdlsClient adlsClient, GitHubConfigManager configManager, IAuditLogger auditLogger)
         {
             this.telemetryClient = new TelemetryClient(telemetryConfiguration);
             this.httpClient = httpClient;
@@ -58,6 +60,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             this.adlsClient = adlsClient;
             this.configManager = configManager;
             this.configManager.SetTelemetryClient(this.telemetryClient);
+            this.ifxLogger = auditLogger;
 
             if (this.adlsClient.AdlsClient == null)
             {
@@ -316,7 +319,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Delta, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain);
+                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Delta, httpClient, repositoryDetails.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
@@ -393,7 +396,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
 
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Onboarding, httpClient, onboardingInput.OrganizationLogin, this.apiDomain);
+                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Onboarding, httpClient, onboardingInput.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
 
                 QueueClient onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
@@ -509,7 +512,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, StatsTrackerRefreshFrequency);
 
-                    IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain);
+                    IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
                     CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>());
 
                     try
@@ -659,7 +662,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Point, httpClient, repository.OrganizationLogin, this.apiDomain);
+                IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Point, httpClient, repository.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
 
                 StorageManager storageManager;
                 List<IRecordWriter> recordWriters;
@@ -742,7 +745,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-                IAuthentication auth = this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
+                IAuthentication auth = this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain, telemetryClient, this.ifxLogger);
 
                 // get existing organizations
                 string existingOrganizations = "[]";
@@ -767,7 +770,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 }
 
                 // get all organizations where the GitHub app is installed.
-                GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain);
+                GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain, telemetryClient, this.ifxLogger);
                 List<JObject> installations = await githubAuth.GetAppInstallations().ConfigureAwait(false);
 
                 // build configuration.json from organizations in JArray.

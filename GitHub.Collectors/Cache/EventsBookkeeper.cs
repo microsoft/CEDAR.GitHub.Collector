@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.IO;
-using Microsoft.CloudMine.Core.Collectors.Telemetry;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Azure.Storage.Queues;
 using Azure.Data.Tables;

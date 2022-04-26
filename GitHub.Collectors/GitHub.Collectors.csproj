@@ -11,8 +11,10 @@
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CEDAR.Core.Collector\Core.Auditing\Core.Auditing.csproj" />
     <ProjectReference Include="..\CEDAR.Core.Collector\Core.Collectors\Core.Collectors.csproj" />
     <ProjectReference Include="..\GitHub.Collectors.Authentication\GitHub.Collectors.Authentication.csproj" />
+    <ProjectReference Include="..\CEDAR.Core.Collector\Core.Telemetry\Core.Telemetry.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="local.settings.json">

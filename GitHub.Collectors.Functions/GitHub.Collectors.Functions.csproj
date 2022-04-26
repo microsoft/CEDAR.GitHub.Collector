@@ -27,6 +27,7 @@
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CEDAR.Core.Collector\Core.Auditing\Core.Auditing.csproj" />
     <ProjectReference Include="..\GitHub.Collectors\GitHub.Collectors.csproj" />
   </ItemGroup>
   <ItemGroup>

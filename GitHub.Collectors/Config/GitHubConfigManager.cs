@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Error;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
@@ -21,7 +23,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
             this.apiDomainToken = base.config.SelectToken("ApiDomain");
         }
 
-        public IAuthentication GetAuthentication(CollectorType collectorType, GitHubHttpClient httpClient, string organization, string apiDomain)
+        public IAuthentication GetAuthentication(CollectorType collectorType, GitHubHttpClient httpClient, string organization, string apiDomain, ITelemetryClient telemetryClient, IAuditLogger auditLogger)
         {
             IAuthentication baseAuth = base.GetAuthentication(collectorType.ToString());
             if (baseAuth != null)
@@ -50,7 +52,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Config
                     string gitHubAppKeyUri = gitHubAppKeyUriToken.Value<string>();
                     JToken useInteractiveLoginToken = authenticationToken.SelectToken("UseInteractiveLogin");
                     bool useInteractiveLogin = useInteractiveLoginToken != null && useInteractiveLoginToken.Value<bool>();
-                    GitHubAppAuthentication auth = new GitHubAppAuthentication(appId, httpClient, organization, apiDomain, gitHubAppKeyUri, useInteractiveLogin);
+                    GitHubAppAuthentication auth = new GitHubAppAuthentication(appId, httpClient, organization, apiDomain, gitHubAppKeyUri, useInteractiveLogin, auditLogger, telemetryClient);
                     return auth;
 
                 default:
