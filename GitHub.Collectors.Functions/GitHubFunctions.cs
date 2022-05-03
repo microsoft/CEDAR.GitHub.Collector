@@ -391,7 +391,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain, throwOnRateLimit : true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -741,7 +741,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             {
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
-                IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 100, this.apiDomain, throwOnRateLimit: true);
+                IRateLimiter rateLimiter = new GitHubRateLimiter("*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 100, this.apiDomain);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
@@ -770,7 +770,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 }
 
                 // get all organizations where the GitHub app is installed.
-                GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)this.configManager.GetAuthentication(CollectorType.DiscoverOrganizations, httpClient, null, this.apiDomain, telemetryClient, this.ifxLogger);
+                GitHubAppAuthentication githubAuth = (GitHubAppAuthentication)auth;
                 List<JObject> installations = await githubAuth.GetAppInstallations().ConfigureAwait(false);
 
                 // build configuration.json from organizations in JArray.
