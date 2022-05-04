@@ -379,8 +379,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             };
 
             StatsTracker statsTracker = null;
-            string outputPaths = string.Empty;
             bool success = false;
+            List<IRecordWriter> recordWriters = null;
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             try
             {
@@ -402,7 +402,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
 
                 StorageManager storageManager;
-                List<IRecordWriter> recordWriters;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
                     recordWriters = storageManager.InitializeRecordWriters(identifier, context, contextWriter, this.adlsClient.AdlsClient);
@@ -424,7 +423,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 }
 
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);
-                outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
                 success = true;
             }
             catch (GitHubRateLimitException exception)
@@ -442,6 +440,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             finally
             {
+                string outputPaths = string.Empty;
+                if (recordWriters != null)
+                {
+                    outputPaths = RecordWriterExtensions.GetOutputPaths(recordWriters);
+                }
                 SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails), success);
                 statsTracker?.Stop();
             }
