@@ -798,7 +798,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 {
                     existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
                 }
-
                 // check that collector functions are using github app authentication.
                 if (!(auth is GitHubAppAuthentication))
                 {
@@ -837,7 +836,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 await AzureHelpers.WriteToBlob("github-settings", "generated-organizations.json", configurationString).ConfigureAwait(false);
 
                 // find organization diff.
-
                 JArray organizationsArray = JArray.Parse(existingOrganizations);
 
                 foreach (JObject organization in organizationsArray)
