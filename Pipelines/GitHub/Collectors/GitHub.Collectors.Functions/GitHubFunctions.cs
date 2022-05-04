@@ -648,11 +648,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
             bool success = false;
             string outputPaths = string.Empty;
-            Dictionary<string, string> sessionEndProperties = new Dictionary<string, string>();
             StatsTracker statsTracker = null;
             string identifier = "Point";
             try
             {
+                telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, pointCollectorInput.Repository));
+
                 ICache<PointCollectorTableEntity> pointCollectorCache = new AzureTableCache<PointCollectorTableEntity>(telemetryClient, "point");
                 await pointCollectorCache.InitializeAsync().ConfigureAwait(false);
                 Repository repository = pointCollectorInput.Repository;
@@ -705,7 +706,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             finally
             {
-                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, sessionEndProperties, success);
+                SendSessionEndEvent(telemetryClient, context.FunctionStartDate, outputPaths, GetRepositoryCollectorSessionStartEventProperties(context, identifier, pointCollectorInput.Repository), success);
                 statsTracker?.Stop();
             }
         }
@@ -813,7 +814,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 {
                     OnboardingInput onboardingInput = new OnboardingInput()
                     {
-                        OnboardingType = OnboardingType.Repository,
+                        OnboardingType = OnboardingType.Organization,
                         OrganizationId = id,
                         OrganizationLogin = discoveredOrganizationMap[id]
                     };
