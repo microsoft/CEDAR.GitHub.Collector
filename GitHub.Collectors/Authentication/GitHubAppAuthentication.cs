@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 using Azure.Identity;
-using Microsoft.Cloud.InstrumentationFramework;
+//using Microsoft.Cloud.InstrumentationFramework;
 using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Error;
@@ -10,6 +10,7 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Newtonsoft.Json.Linq;
+using OpenTelemetry.Audit.Geneva;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -131,15 +132,17 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
         private void LogTokenGenerationEvent()
         {
             string callerIdentity = this.Identity.Substring(0, 4); // For security reasons, include only the first 4 characters.
-            TargetResource[] targetResources = new TargetResource[]
+            List<TargetResource> targetResources = new List<TargetResource>()
             {
                 new TargetResource("Organization", this.organization),
             };
-            CallerIdentity[] callerIdentities = new CallerIdentity[]
+
+            List<CallerIdentity> callerIdentities = new List<CallerIdentity>()
             {
                 new CallerIdentity(CallerIdentityType.ApplicationID, callerIdentity),
             };
-            this.auditLogger.LogTokenGenerationAuditEvent(telemetryClient, OperationResult.Success, targetResources, callerIdentities, TokenType);
+
+            this.auditLogger.LogTokenGenerationAuditEvent(telemetryClient, OperationResult.Success, "",  targetResources, callerIdentities, TokenType);
         }
 
         /// <summary>

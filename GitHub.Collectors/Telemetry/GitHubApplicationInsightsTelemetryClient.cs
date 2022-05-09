@@ -14,7 +14,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
 {
     public class GitHubApplicationInsightsTelemetryClient : ApplicationInsightsTelemetryClient
     {
-        public GitHubApplicationInsightsTelemetryClient(TelemetryClient telemetryClient, FunctionContext context, ILogger logger = null)
+        public GitHubApplicationInsightsTelemetryClient(TelemetryClient telemetryClient, FunctionContext context, ILogger logger)
             : base(telemetryClient, context.SessionId, logger)
         {
         }
@@ -40,7 +40,9 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
                     { "RateLimitLimit", rateLimitLimit },
                     { "RateLimitRemaining", rateLimitRemaining },
                 };
+
                 this.TrackEvent("RateLimiter", properties);
+                this.logger.LogInformation("Identity {Identity} has {RateLimitRemaining} of {RateLimitLimit} remaining", identity, rateLimitRemaining, rateLimitLimit);
             }
         }
     }
