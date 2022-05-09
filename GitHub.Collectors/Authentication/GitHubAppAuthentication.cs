@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 using Azure.Identity;
-//using Microsoft.Cloud.InstrumentationFramework;
 using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Error;
