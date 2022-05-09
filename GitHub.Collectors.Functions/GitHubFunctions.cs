@@ -154,7 +154,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         public async Task ProcessWebHookActivity([ActivityTrigger] IDurableActivityContext durableContext, ILogger logger)
         {
             OrchestrationContext context = durableContext.GetInput<OrchestrationContext>();
-            using Activity invocationActivity = GetInvocationActivity(context);
+            using Activity invocationActivity = GetInvocationActivity(context).Start();
 
             string requestBody = context.RequestBody;
             WebhookProcessorContext functionContext = context.Downgrade();
@@ -282,7 +282,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("ProcessEventsTimeline")]
         public async Task ProcessEventsTimeline([QueueTrigger("eventstats")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -362,7 +362,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("Onboard")]
         public async Task Onboard([QueueTrigger("onboarding")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -465,7 +465,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("TrafficTimer")]
         public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo).Start();
             
             return ExecuteTrafficCollector(executionContext, logger, dequeueCount: 0);
         }
@@ -477,7 +477,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("TrafficCollector")]
         public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             return ExecuteTrafficCollector(executionContext, logger, dequeueCount);
         }
@@ -581,7 +581,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("Traffic")]
         public async Task Traffic([QueueTrigger("traffic")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
@@ -631,7 +631,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("PointCollector")]
         public Task PointCollector([QueueTrigger("pointcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : string.Empty, dequeueCount);
         }
@@ -639,7 +639,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("PointCollectorDri")]
         public Task PointCollectorAdHoc([QueueTrigger("pointcollector-dri")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : "-dri", dequeueCount);
         }
@@ -734,7 +734,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("DiscoverOrganizationsTimer")]
         public Task AutoOnboard([TimerTrigger("0 0 8 * * *") /* execute once per day at midnight (PST)*/] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo).Start();
 
             return this.ExecuteAutoOnboardAsync(executionContext, logger);
         }
@@ -742,7 +742,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("DiscoverOrganizations")]
         public Task AutoOnboardDri([QueueTrigger("discover-organizations")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount);
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
 
             return this.ExecuteAutoOnboardAsync(executionContext, logger);
         }
@@ -861,14 +861,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("Heartbeat")]
         public void Heartbeat([TimerTrigger("0 * * * * *", RunOnStartup = false)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            using Activity SessionActivity = GetInvocationActivity(executionContext, timerInfo);
+            using Activity SessionActivity = GetInvocationActivity(executionContext, timerInfo).Start();
             // Todo : add monitoring info to heartbeat (poison queue checks, failed session invocation IDs)
             OpenTelemetryMetric.HeartbeatCounter.Add(1);
         }
 
         private Activity GetInvocationActivity(ExecutionContext context, string queueItem, int dequeueCount)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation).Start();
+            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.FunctionName);
             trace.AddTag("DequeueCount", dequeueCount);
@@ -878,7 +878,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
         private Activity GetInvocationActivity(ExecutionContext context, TimerInfo timerInfo)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation).Start();
+            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.FunctionName);
             trace.AddTag("IsPastDue", timerInfo.IsPastDue);
@@ -887,7 +887,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
         private Activity GetInvocationActivity(OrchestrationContext context)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation).Start();
+            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.CollectorType);
             return trace;
