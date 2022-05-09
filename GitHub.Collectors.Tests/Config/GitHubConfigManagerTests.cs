@@ -1,14 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using Microsoft.CloudMine.Core.Auditing;
 using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Config;
 using Microsoft.CloudMine.Core.Collectors.Context;
 using Microsoft.CloudMine.Core.Collectors.IO;
-using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Telemetry;
 using Microsoft.CloudMine.Core.Collectors.Tests.Web;
 using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Authentication;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
@@ -25,6 +26,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
         private GitHubConfigManager configManager;
         private GitHubHttpClient httpClient;
         private ITelemetryClient telemetryClient;
+        private IAuditLogger auditLogger;
         private string jsonInput;
         private string apiDomain;
 
@@ -77,7 +79,7 @@ namespace Microsoft.CloudMine.Core.Collectors.Tests.Authentication
             
             string organization = "Organization";
             string apiDomain = configManager.GetApiDomain();
-            Assert.IsTrue(this.configManager.GetAuthentication(CollectorType.Onboarding, this.httpClient, organization, apiDomain) is GitHubAppAuthentication);
+            Assert.IsTrue(this.configManager.GetAuthentication(CollectorType.Onboarding, this.httpClient, organization, apiDomain, telemetryClient, auditLogger) is GitHubAppAuthentication);
         }
 
         [TestMethod]
