@@ -464,9 +464,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// </summary>
         [FunctionName("TrafficTimer")]
         public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
-        {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo).Start();
-            
+        {            
             return ExecuteTrafficCollector(executionContext, logger, dequeueCount: 0);
         }
 
@@ -477,13 +475,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("TrafficCollector")]
         public Task TrafficCollector([QueueTrigger("trafficcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
-
             return ExecuteTrafficCollector(executionContext, logger, dequeueCount);
         }
 
         private async Task ExecuteTrafficCollector(ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
+            using Activity invocationActivity = GetInvocationActivity(executionContext, "", dequeueCount).Start();
+
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
             string identifier = "TrafficTimer";
@@ -631,21 +629,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("PointCollector")]
         public Task PointCollector([QueueTrigger("pointcollector")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
-
             return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : string.Empty, dequeueCount);
         }
 
         [FunctionName("PointCollectorDri")]
         public Task PointCollectorAdHoc([QueueTrigger("pointcollector-dri")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
-
             return this.ExecutePointCollectorAsync(queueItem, executionContext, logger, queueSuffix : "-dri", dequeueCount);
         }
 
         public async Task ExecutePointCollectorAsync(string queueItem, ExecutionContext executionContext, ILogger logger, string queueSuffix, int dequeueCount)
         {
+            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
+
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
 
@@ -736,19 +732,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         {
             using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo).Start();
 
-            return this.ExecuteAutoOnboardAsync(executionContext, logger);
+            return this.ExecuteAutoOnboardAsync(executionContext, logger, 0);
         }
 
         [FunctionName("DiscoverOrganizations")]
         public Task AutoOnboardDri([QueueTrigger("discover-organizations")] string queueItem, ExecutionContext executionContext, ILogger logger, int dequeueCount)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, queueItem, dequeueCount).Start();
-
-            return this.ExecuteAutoOnboardAsync(executionContext, logger);
+            return this.ExecuteAutoOnboardAsync(executionContext, logger, dequeueCount);
         }
 
-        private async Task ExecuteAutoOnboardAsync(ExecutionContext executionContext, ILogger logger)
+        private async Task ExecuteAutoOnboardAsync(ExecutionContext executionContext, ILogger logger, int dequeueCount )
         {
+            using Activity invocationActivity = GetInvocationActivity(executionContext, "", dequeueCount).Start();
+
             DateTime functionStartDate = DateTime.UtcNow;
             string sessionId = Guid.NewGuid().ToString();
 
