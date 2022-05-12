@@ -130,7 +130,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Authentication
 
         private void LogTokenGenerationEvent()
         {
-            string callerIdentity = this.Identity.Substring(0, 4); // For security reasons, include only the first 4 characters.
+            string callerIdentity = this.Identity.Substring(0, 4) + "0000-0000-0000-0000-000000000000000000000000"; // For security reasons, include only the first 4 characters.
+
             List<TargetResource> targetResources = new List<TargetResource>()
             {
                 new TargetResource("Organization", this.organization),
