@@ -730,8 +730,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         [FunctionName("DiscoverOrganizationsTimer")]
         public Task AutoOnboard([TimerTrigger("0 0 8 * * *") /* execute once per day at midnight (PST)*/] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
         {
-            using Activity invocationActivity = GetInvocationActivity(executionContext, timerInfo).Start();
-
             return this.ExecuteAutoOnboardAsync(executionContext, logger, 0);
         }
 
