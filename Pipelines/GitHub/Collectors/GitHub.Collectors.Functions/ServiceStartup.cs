@@ -2,14 +2,16 @@
 // Licensed under the MIT License.
 
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
-using Microsoft.CloudMine.Core.Collectors.Web;
-using Microsoft.CloudMine.Core.Collectors.Config;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.CloudMine.Core.Collectors.IO;
-using System;
 using Microsoft.Azure.WebJobs.Host.Queues;
-using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Auditing;
+using Microsoft.CloudMine.Core.Collectors.Collector;
+using Microsoft.CloudMine.Core.Collectors.Config;
+using Microsoft.CloudMine.Core.Collectors.IO;
+using Microsoft.CloudMine.Core.Collectors.Web;
+using Microsoft.CloudMine.Core.Telemetry;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
 
 [assembly: FunctionsStartup(typeof(Microsoft.CloudMine.GitHub.Collectors.Functions.ServiceStartup))]
 
@@ -39,7 +41,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             builder.Services.AddSingleton<IHttpClient, HttpClientWrapper>();
             builder.Services.AddSingleton<IAdlsClient, AdlsClientWrapper>();
             builder.Services.AddSingleton<IQueueProcessorFactory, CustomQueueProcessorFactory>();
-            builder.Services.AddSingleton<IAuditLogger, IfxAuditLogger>();
+            builder.Services.AddSingleton<IAuditLogger, OpenTelemetryAuditLogger>();
+            builder.Services.AddSingleton<ILoggerProvider, OpenTelemetryLoggerProvider>();
         }
     }
 }
