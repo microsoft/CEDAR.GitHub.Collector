@@ -464,7 +464,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         /// </summary>
         [FunctionName("TrafficTimer")]
         public Task TrafficTimer([TimerTrigger("0 0 8 * * *" /* run once every day at 00:00:00 PST*/)] TimerInfo timerInfo, ExecutionContext executionContext, ILogger logger)
-        {            
+        {
             return ExecuteTrafficCollector(executionContext, logger, dequeueCount: 0);
         }
 
