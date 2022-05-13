@@ -30,6 +30,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 AllowlistedResponses = new List<HttpResponseSignature>(this.AllowlistedResponses),
                 AllowlistedExceptions = new List<HttpExceptionSignature>(this.AllowlistedExceptions),
                 HaltCollection = this.HaltCollection,
+                HaltCollectionFromResponse = this.HaltCollectionFromResponse,
                 ProduceChildrenFromResponseAsync = this.ProduceChildrenFromResponseAsync,
                 PrepareRecordForOutput = this.PrepareRecordForOutput,
             };
