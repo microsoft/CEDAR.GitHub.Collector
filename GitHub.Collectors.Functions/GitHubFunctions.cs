@@ -425,7 +425,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
 
-                    OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingQueue, telemetryClient, this.apiDomain);
+                    OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingQueue, telemetryClient, this.apiDomain, logger);
                     await processor.ProcessAsync(onboardingInput).ConfigureAwait(false);
                 }
 
@@ -525,7 +525,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     statsTracker = new StatsTracker(telemetryClient, httpClient, StatsTrackerRefreshFrequency);
 
                     IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.TrafficTimer, httpClient, organizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
-                    CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>());
+                    CollectorBase<GitHubCollectionNode> collector = new GitHubCollector(httpClient, authentication, telemetryClient, new List<IRecordWriter>(), logger);
 
                     try
                     {
@@ -700,7 +700,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     }
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
-                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient);
+                    PointCollector processor = new PointCollector(authentication, recordWriters, httpClient, pointCollectorCache, telemetryClient, logger);
                     await processor.ProcessAsync(pointCollectorInput).ConfigureAwait(false);
                 }
                 await storageManager.FinalizeRecordWritersAsync().ConfigureAwait(false);

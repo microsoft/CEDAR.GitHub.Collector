@@ -10,6 +10,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Collector;
 using Microsoft.CloudMine.GitHub.Collectors.Tests.Helpers;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System;
@@ -37,7 +38,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Tests.Collector
             IAuthentication authentication = new BasicAuthentication("Identity", "PersonalAccessToken");
             List<IRecordWriter> recordWriters = new List<IRecordWriter>();
             recordWriters.Add(this.recordWriter);
-            this.collector = new GitHubCollector(githubHttpClient, authentication, new NoopTelemetryClient(), recordWriters);
+            this.collector = new GitHubCollector(githubHttpClient, authentication, new NoopTelemetryClient(), recordWriters, new NoopLogger());
         }
 
         [TestMethod]

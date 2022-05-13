@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 {
@@ -18,8 +19,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
     {
         private readonly GitHubHttpClient httpClient;
 
-        public GitHubCollector(GitHubHttpClient httpClient, IAuthentication authentication, ITelemetryClient telemetryClient, List<IRecordWriter> recordWriters)
-            : base(authentication, telemetryClient, recordWriters)
+        public GitHubCollector(GitHubHttpClient httpClient, IAuthentication authentication, ITelemetryClient telemetryClient, List<IRecordWriter> recordWriters, ILogger logger)
+            : base(authentication, telemetryClient, recordWriters, logger)
         {
             this.httpClient = httpClient;
         }

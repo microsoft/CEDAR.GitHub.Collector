@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Processor
 {
@@ -42,9 +43,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Processor
                                    ICache<OnboardingTableEntity> cache,
                                    IQueue onboardingQueue,
                                    ITelemetryClient telemetryClient,
-                                   string apiDomain)
+                                   string apiDomain,
+                                   ILogger logger)
         {
-            this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
+            this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters, logger);
 
             this.recordWriters = recordWriters;
             this.cache = cache;

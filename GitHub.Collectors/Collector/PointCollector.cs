@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 {
@@ -25,9 +26,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
                               ICache<PointCollectorTableEntity> cache,
-                              ITelemetryClient telemetryClient)
+                              ITelemetryClient telemetryClient,
+                              ILogger logger)
         {
-            this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
+            this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters, logger);
             this.cache = cache;
         }
 

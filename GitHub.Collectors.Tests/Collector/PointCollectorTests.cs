@@ -44,7 +44,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Tests.Collector
             List<IRecordWriter> recordWriters = new List<IRecordWriter>();
             InMemoryRecordWriter recordWriter = new InMemoryRecordWriter();
             recordWriters.Add(recordWriter);
-            PointCollector pointCollector = new PointCollector(authentication, recordWriters, githubHttpClient, cache, telemetryClient);
+            PointCollector pointCollector = new PointCollector(authentication, recordWriters, githubHttpClient, cache, telemetryClient, new NoopLogger());
             await pointCollector.ProcessAsync(input);
 
             List<Tuple<JObject, RecordContext>> records = recordWriter.GetRecords();
