@@ -29,6 +29,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 ProcessRecordAsync = this.ProcessRecordAsync,
                 AllowlistedResponses = new List<HttpResponseSignature>(this.AllowlistedResponses),
                 AllowlistedExceptions = new List<HttpExceptionSignature>(this.AllowlistedExceptions),
+                RetryRules = new List<RetryRule>(this.RetryRules),
                 HaltCollection = this.HaltCollection,
                 HaltCollectionFromResponse = this.HaltCollectionFromResponse,
                 ProduceChildrenFromResponseAsync = this.ProduceChildrenFromResponseAsync,
