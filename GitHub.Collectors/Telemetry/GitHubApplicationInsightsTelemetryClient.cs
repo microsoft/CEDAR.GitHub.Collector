@@ -42,7 +42,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
                 };
 
                 this.TrackEvent("RateLimiter", properties);
-                this.logger.LogInformation("Rate limit: Identity {Identity} has {RateLimitRemaining} of {RateLimitLimit} remaining", identity, rateLimitRemaining, rateLimitLimit);
             }
         }
     }
