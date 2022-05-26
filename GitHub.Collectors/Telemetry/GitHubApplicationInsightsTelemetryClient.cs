@@ -15,7 +15,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Telemetry
     public class GitHubApplicationInsightsTelemetryClient : ApplicationInsightsTelemetryClient
     {
         public GitHubApplicationInsightsTelemetryClient(TelemetryClient telemetryClient, FunctionContext context, ILogger logger)
-            : base(telemetryClient, context.SessionId)
+            : base(telemetryClient, context.SessionId, logger)
         {
         }
 
