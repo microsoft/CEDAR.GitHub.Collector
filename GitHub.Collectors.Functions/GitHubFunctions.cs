@@ -74,7 +74,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
         [FunctionName("ProcessWebHook")]
         public async Task<HttpResponseMessage> ProcessWebHook([HttpTrigger(AuthorizationLevel.Function, "POST")] HttpRequestMessage request,
-                                                              [DurableClient] IDurableOrchestrationClient orchestrationClient,
+                                                              [DurableClient(TaskHub = "%TaskHub%")] IDurableOrchestrationClient orchestrationClient,
                                                               ExecutionContext executionContext,
                                                               ILogger logger)
         {
