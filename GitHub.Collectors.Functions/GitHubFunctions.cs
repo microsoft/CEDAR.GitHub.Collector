@@ -133,7 +133,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 InvocationId = executionContext.InvocationId.ToString(),
             };
 
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             telemetryClient.TrackEvent("SessionStart", GetMainCollectorSessionStartEventProperties(context, identifier: eventType, logicAppRunId));
 
             string instanceId = await orchestrationClient.StartNewAsync("ProcessWebHookOrchestration", context).ConfigureAwait(false);
@@ -171,7 +171,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             string outputPaths = string.Empty;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, functionContext, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, functionContext);
             try
             {
                 // Not all payloads have a "repository" attribute e.g., membership, organization, project, project_card, etc. paylods. Look under $organization attribute first, if available.
@@ -306,7 +306,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
             string outputPaths = string.Empty;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
@@ -388,7 +388,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             StatsTracker statsTracker = null;
             bool success = false;
             List<IRecordWriter> recordWriters = null;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
@@ -501,7 +501,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
             StatsTracker statsTracker = null;
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetCollectorCommonSessionStartEventProperties(context, identifier));
@@ -602,7 +602,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             };
 
             bool success = false;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
@@ -661,7 +661,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 DequeueCount = dequeueCount,
             };
 
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             bool success = false;
             string outputPaths = string.Empty;
             StatsTracker statsTracker = null;
@@ -755,7 +755,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 InvocationId = executionContext.InvocationId.ToString(),
             };
 
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context, logger);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
             try
             {
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
