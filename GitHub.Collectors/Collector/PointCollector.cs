@@ -102,7 +102,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 {"Skipped", "False" },
             };
             telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
-            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
+            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("pointcollector").ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
             PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);

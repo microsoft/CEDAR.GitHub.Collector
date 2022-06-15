@@ -36,7 +36,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
             }
 
             this.table = await AzureHelpers.GetStorageTableAsync("eventstats").ConfigureAwait(false);
-            this.queue = await AzureHelpers.GetStorageQueueAsync("eventstats").ConfigureAwait(false);
+            this.queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats").ConfigureAwait(false);
 
             this.initialized = true;
         }

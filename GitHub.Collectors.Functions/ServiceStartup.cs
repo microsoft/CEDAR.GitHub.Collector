@@ -31,7 +31,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             try
             {
-                settings = AzureHelpers.GetBlobContentAsync("github-settings", settingsPath).ConfigureAwait(false).GetAwaiter().GetResult();
+                settings = AzureHelpers.GetBlobContentUsingMsiAsync("github-settings", settingsPath).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
             {
