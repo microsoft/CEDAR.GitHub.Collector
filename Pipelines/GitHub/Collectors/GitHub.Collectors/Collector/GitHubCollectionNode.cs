@@ -27,6 +27,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 ProduceChildrenAsync = this.ProduceChildrenAsync,
                 ProduceAdditionalMetadata = this.ProduceAdditionalMetadata,
                 ProcessRecordAsync = this.ProcessRecordAsync,
+                ProcessRecordWithResponseAsync = this.ProcessRecordWithResponseAsync,
                 AllowlistedResponses = new List<HttpResponseSignature>(this.AllowlistedResponses),
                 AllowlistedExceptions = new List<HttpExceptionSignature>(this.AllowlistedExceptions),
                 RetryRules = new List<RetryRule>(this.RetryRules),
