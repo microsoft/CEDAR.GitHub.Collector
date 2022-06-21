@@ -20,7 +20,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
     {
         private readonly CollectorBase<GitHubCollectionNode> collector;
         private readonly ICache<PointCollectorTableEntity> cache;
-
+        private static string storageAccountNameEnvironmentVariable;
         public PointCollector(IAuthentication authentication,
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
@@ -29,6 +29,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
         {
             this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
             this.cache = cache;
+            storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
         }
 
         public async Task ProcessAsync(PointCollectorInput input)
@@ -102,7 +103,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 {"Skipped", "False" },
             };
             telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
-            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("pointcollector").ConfigureAwait(false);
+            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("pointcollector", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
             PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);

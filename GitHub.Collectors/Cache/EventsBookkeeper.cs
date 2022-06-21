@@ -17,7 +17,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
     public class EventsBookkeeper : IEventsBookkeeper
     {
         private readonly ITelemetryClient telemetryClient;
-
+        private readonly string storageAccountNameEnvironmentVariable;
         private CloudTable table;
         private CloudQueue queue;
         private bool initialized;
@@ -26,6 +26,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         {
             this.telemetryClient = telemetryClient;
             this.initialized = false;
+            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
         }
 
         public async Task InitializeAsync()
@@ -36,7 +37,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
             }
 
             this.table = await AzureHelpers.GetStorageTableAsync("eventstats").ConfigureAwait(false);
-            this.queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats").ConfigureAwait(false);
+            this.queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
 
             this.initialized = true;
         }
