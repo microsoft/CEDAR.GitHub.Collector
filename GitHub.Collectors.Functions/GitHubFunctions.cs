@@ -63,8 +63,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             this.configManager.SetTelemetryClient(this.telemetryClient);
             this.ifxLogger = auditLogger;
             this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
-
-
             if (this.adlsClient.AdlsClient == null)
             {
                 Dictionary<string, string> properties = new Dictionary<string, string>()
@@ -409,7 +407,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Onboarding, httpClient, onboardingInput.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
 
                 CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("onboarding", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
-                IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
+                IQueue onboardingQueue = new CloudQueueMsiWrapper(onboardingCloudQueue, storageAccountNameEnvironmentVariable);
 
                 StorageManager storageManager;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
@@ -490,7 +488,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             string identifier = "TrafficTimer";
 
             CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("traffic", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
-            IQueue trafficQueue = new CloudQueueWrapper(trafficCloudQueue);
+            IQueue trafficQueue = new CloudQueueMsiWrapper(trafficCloudQueue, storageAccountNameEnvironmentVariable);
 
             FunctionContext context = new FunctionContext()
             {
@@ -841,7 +839,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                     };
 
                     CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("onboarding-auto", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
-                    IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
+                    IQueue onboardingQueue = new CloudQueueMsiWrapper(onboardingCloudQueue, storageAccountNameEnvironmentVariable);
                     await onboardingQueue.PutObjectAsJsonStringAsync(onboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
                 }
 

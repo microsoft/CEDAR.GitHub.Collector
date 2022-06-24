@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
@@ -26,7 +26,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             string settings = null;
             string settingsPath = Environment.GetEnvironmentVariable("SettingsPath");
             string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
-
             if (string.IsNullOrWhiteSpace(settingsPath))
             {
                 settingsPath = "Settings.json";

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.IO;
@@ -45,7 +45,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         public Task SignalCountAsync(Repository eventStats)
         {
             string message = JsonConvert.SerializeObject(eventStats, Formatting.None);
-            return this.queue.AddMessageAsync(new CloudQueueMessage(message));
+            return AddQueueMessageAsync(new CloudQueueMessage(message));
+        }
+
+        private async Task AddQueueMessageAsync(CloudQueueMessage message)
+        {
+            CloudQueue queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
+            await queue.AddMessageAsync(message).ConfigureAwait(false);
         }
 
         public Task ResetCountAsync(Repository repository)

@@ -1,4 +1,4 @@
-﻿using Microsoft.CloudMine.Core.Collectors.Authentication;
+using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.IO;
@@ -104,7 +104,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             };
             telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
             CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("pointcollector", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
-            IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
+            IQueue pointQueue = new CloudQueueMsiWrapper(pointCloudQueue, storageAccountNameEnvironmentVariable);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
             PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
             await pointCollectorCache.CacheAsync(collectionRecord).ConfigureAwait(false);
