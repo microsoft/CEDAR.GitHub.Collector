@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "tasks": [
+    {
+      "taskType": "trigger",
+      "capabilityId": "ReleaseAnnouncement",
+      "subCapability": "ReleaseAnnouncement",
+      "version": "1.0",
+      "id": "QPR2PmKL6",
+      "config": {
+        "taskName": "Release ",
+        "prReply": "Thank you for contributing to ${repo}, our team with review this shortly. ",
+        "issueReply": "This feature has been completed and deployed, for details see: the PR ${prNumber}. "
+      }
+    },
+    {
+      "taskType": "trigger",
+      "capabilityId": "AutoMerge",
+      "subCapability": "AutoMerge",
+      "version": "1.0",
+      "id": "uGv7KDc2M",
+      "config": {
+        "label": "auto merge",
+        "allowAutoMergeInstructionsWithoutLabel": true,
+        "mergeType": "merge",
+        "usePrDescriptionAsCommitMessage": false,
+        "removeLabelOnPush": false,
+        "minimumNumberOfStatuses": 1,
+        "taskName": "Auto-Merge"
+      }
+    },
+    {
+      "taskType": "trigger",
+      "capabilityId": "InPrLabel",
+      "subCapability": "InPrLabel",
+      "version": "1.0",
+      "id": "hQJ6QNq4d",
+      "config": {
+        "taskName": "In-PR ",
+        "label_inPr": "In-PR-pending-deployment"
+      }
+    }
+  ],
+  "userGroups": []
+}
