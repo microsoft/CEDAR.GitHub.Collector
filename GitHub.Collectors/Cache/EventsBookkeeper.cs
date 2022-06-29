@@ -37,7 +37,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
             }
 
             this.table = await AzureHelpers.GetStorageTableAsync("eventstats").ConfigureAwait(false);
-            this.queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
+            this.queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable, telemetryClient).ConfigureAwait(false);
 
             this.initialized = true;
         }
@@ -50,7 +50,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
 
         private async Task AddQueueMessageAsync(CloudQueueMessage message)
         {
-            CloudQueue queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable).ConfigureAwait(false);
+            CloudQueue queue = await AzureHelpers.GetStorageQueueUsingMsiAsync("eventstats", storageAccountNameEnvironmentVariable, telemetryClient).ConfigureAwait(false);
             await queue.AddMessageAsync(message).ConfigureAwait(false);
         }
 
