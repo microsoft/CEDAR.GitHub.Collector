@@ -26,8 +26,7 @@ using Microsoft.CloudMine.GitHub.Collectors.Processor;
 using Microsoft.CloudMine.GitHub.Collectors.Telemetry;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
+using Azure.Storage.Queues;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -37,6 +36,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using Azure;
 
 namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
@@ -405,7 +405,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Onboarding, httpClient, onboardingInput.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
 
-                CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
+                QueueClient onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
 
                 StorageManager storageManager;
@@ -435,10 +435,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
-                CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
+                QueueClient onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding").ConfigureAwait(false);
                 TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
-                await onboardingCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                await onboardingCloudQueue.SendMessageAsync(queueItem, initialVisibilityDelay, timeToLive).ConfigureAwait(false);
             }
             catch (Exception exception) when (!(exception is FatalException))
             {
@@ -486,7 +486,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             string sessionId = Guid.NewGuid().ToString();
             string identifier = "TrafficTimer";
 
-            CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
+            QueueClient trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync("traffic").ConfigureAwait(false);
             IQueue trafficQueue = new CloudQueueWrapper(trafficCloudQueue);
 
             FunctionContext context = new FunctionContext()
@@ -710,10 +710,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             catch (GitHubRateLimitException exception)
             {
                 telemetryClient.TrackException(exception, "RateLimiterRequeue");
-                CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
+                QueueClient trafficCloudQueue = await AzureHelpers.GetStorageQueueAsync($"pointcollector{queueSuffix}").ConfigureAwait(false);
                 TimeSpan? initialVisibilityDelay = exception.GetHiddenTime();
                 TimeSpan? timeToLive = null;
-                await trafficCloudQueue.AddMessageAsync(new CloudQueueMessage(queueItem), timeToLive, initialVisibilityDelay, new QueueRequestOptions(), new OperationContext()).ConfigureAwait(false);
+                await trafficCloudQueue.SendMessageAsync(queueItem, initialVisibilityDelay, timeToLive).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -772,7 +772,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 {
                     existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "generated-organizations.json").ConfigureAwait(false);
                 }
-                catch (StorageException)
+                catch (RequestFailedException)
                 {
                     existingOrganizations = await AzureHelpers.GetBlobContentAsync("github-settings", "organizations.json").ConfigureAwait(false);
                 }
@@ -837,7 +837,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                         OrganizationLogin = discoveredOrganizationMap[id]
                     };
 
-                    CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding-auto").ConfigureAwait(false);
+                    QueueClient onboardingCloudQueue = await AzureHelpers.GetStorageQueueAsync("onboarding-auto").ConfigureAwait(false);
                     IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
                     await onboardingQueue.PutObjectAsJsonStringAsync(onboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
                 }

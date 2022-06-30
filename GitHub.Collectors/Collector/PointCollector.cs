@@ -7,7 +7,7 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
-using Microsoft.WindowsAzure.Storage.Queue;
+using Azure.Storage.Queues;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -84,7 +84,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(input.Url);
             tableEntity = await pointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
             Dictionary<string, string> properties;
-            if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.AddMinutes(5))
+            if (tableEntity != null && DateTimeOffset.UtcNow < tableEntity.Timestamp.Value.AddMinutes(5))
             {
                 // has been collected in last 5 minuets, skip collection
                 properties = new Dictionary<string, string>()
@@ -102,7 +102,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 {"Skipped", "False" },
             };
             telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
-            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
+            QueueClient pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
             IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
             PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
