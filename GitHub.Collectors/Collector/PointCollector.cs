@@ -20,7 +20,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
     {
         private readonly CollectorBase<GitHubCollectionNode> collector;
         private readonly ICache<PointCollectorTableEntity> cache;
-        private static string storageAccountNameEnvironmentVariable;
         public PointCollector(IAuthentication authentication,
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
@@ -29,7 +28,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
         {
             this.collector = new GitHubCollector(httpClient, authentication, telemetryClient, recordWriters);
             this.cache = cache;
-            storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
         }
 
         public async Task ProcessAsync(PointCollectorInput input)
@@ -82,6 +80,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 
         public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
         {
+            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(input.Url);
             tableEntity = await pointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
             Dictionary<string, string> properties;
