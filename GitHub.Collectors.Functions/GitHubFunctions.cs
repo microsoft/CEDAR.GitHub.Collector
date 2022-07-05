@@ -389,26 +389,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             StatsTracker statsTracker = null;
             bool success = false;
             List<IRecordWriter> recordWriters = null;
-            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
+            ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);            
             try
             {
                 telemetryClient.TrackEvent("SessionStart", GetRepositoryCollectorSessionStartEventProperties(context, identifier, repositoryDetails));
-
                 ICache<OnboardingTableEntity> onboardingCache = new AzureTableCache<OnboardingTableEntity>(telemetryClient, "onboarding");
                 await onboardingCache.InitializeAsync().ConfigureAwait(false);
-
                 ICache<RateLimitTableEntity> rateLimiterCache = new AzureTableCache<RateLimitTableEntity>(telemetryClient, "ratelimiter");
                 await rateLimiterCache.InitializeAsync().ConfigureAwait(false);
                 IRateLimiter rateLimiter = new GitHubRateLimiter(this.configManager.UsesGitHubAuth(context.CollectorType) ? onboardingInput.OrganizationLogin : "*", rateLimiterCache, this.httpClient, telemetryClient, maxUsageBeforeDelayStarts: 50.0, this.apiDomain);
                 ICache<ConditionalRequestTableEntity> requestsCache = new AzureTableCache<ConditionalRequestTableEntity>(telemetryClient, "requests");
                 await requestsCache.InitializeAsync().ConfigureAwait(false);
                 GitHubHttpClient httpClient = new GitHubHttpClient(this.httpClient, rateLimiter, requestsCache, telemetryClient);
-
                 IAuthentication authentication = this.configManager.GetAuthentication(CollectorType.Onboarding, httpClient, onboardingInput.OrganizationLogin, this.apiDomain, telemetryClient, this.ifxLogger);
-
-                CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("onboarding", storageAccountNameEnvironmentVariable, telemetryClient).ConfigureAwait(false);
-                IQueue onboardingQueue = new CloudQueueMsiWrapper(onboardingCloudQueue, storageAccountNameEnvironmentVariable, telemetryClient);
-
                 StorageManager storageManager;
                 using (storageManager = this.configManager.GetStorageManager(context.CollectorType, telemetryClient))
                 {
@@ -426,7 +419,10 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
                     statsTracker = new StatsTracker(telemetryClient, httpClient, recordStatsTracker, StatsTrackerRefreshFrequency);
 
-                    OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingQueue, telemetryClient, this.apiDomain);
+                    CloudQueueMsiWrapper onboardingMsiWrapper = new CloudQueueMsiWrapper("onboarding", storageAccountNameEnvironmentVariable, telemetryClient);
+                    CloudQueue onboardingCloudQueue = await onboardingMsiWrapper.GetValidMsiStorageQueueAsync().ConfigureAwait(false);
+                    IQueue onboardingQueue = new CloudQueueWrapper(onboardingCloudQueue);
+                    OnboardingProcessor processor = new OnboardingProcessor(authentication, recordWriters, httpClient, onboardingCache, onboardingMsiWrapper, telemetryClient, this.apiDomain);
                     await processor.ProcessAsync(onboardingInput).ConfigureAwait(false);
                 }
 
@@ -495,8 +491,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                 DequeueCount = dequeueCount,
             };
             ITelemetryClient telemetryClient = new GitHubApplicationInsightsTelemetryClient(this.telemetryClient, context);
-            CloudQueue trafficCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("traffic", storageAccountNameEnvironmentVariable, telemetryClient).ConfigureAwait(false);
-            IQueue trafficQueue = new CloudQueueMsiWrapper(trafficCloudQueue, storageAccountNameEnvironmentVariable, telemetryClient);
+            IQueue trafficCloudQueue = new CloudQueueMsiWrapper("traffic", storageAccountNameEnvironmentVariable, telemetryClient);
             StatsTracker statsTracker = null;
             bool success = false;            
             try
@@ -537,7 +532,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                                 long repositoryId = record.SelectToken("$.id").Value<long>();
 
                                 Repository repository = new Repository(organizationId, repositoryId, organizationLogin, repositoryName);
-                                await trafficQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
+                                await trafficCloudQueue.PutObjectAsJsonStringAsync(repository, TimeSpan.MaxValue).ConfigureAwait(false);
                                 return new List<RecordWithContext>();
                             },
                         };
@@ -834,8 +829,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
                         OrganizationLogin = discoveredOrganizationMap[id]
                     };
 
-                    CloudQueue onboardingCloudQueue = await AzureHelpers.GetStorageQueueUsingMsiAsync("onboarding-auto", storageAccountNameEnvironmentVariable, telemetryClient).ConfigureAwait(false);
-                    IQueue onboardingQueue = new CloudQueueMsiWrapper(onboardingCloudQueue, storageAccountNameEnvironmentVariable, telemetryClient);
+                    IQueue onboardingQueue = new CloudQueueMsiWrapper("onboarding-auto", storageAccountNameEnvironmentVariable, telemetryClient);
                     await onboardingQueue.PutObjectAsJsonStringAsync(onboardingInput, TimeSpan.MaxValue).ConfigureAwait(false);
                 }
 
