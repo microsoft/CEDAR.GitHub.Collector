@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
@@ -25,13 +25,14 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             // Write startupcode here.            
             string settings = null;
             string settingsPath = Environment.GetEnvironmentVariable("SettingsPath");
+            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(settingsPath))
             {
                 settingsPath = "Settings.json";
             }
             try
             {
-                settings = AzureHelpers.GetBlobContentAsync("github-settings", settingsPath).ConfigureAwait(false).GetAwaiter().GetResult();
+                settings = AzureHelpers.GetBlobContentUsingMsiAsync("github-settings", settingsPath, storageAccountNameEnvironmentVariable).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
             {

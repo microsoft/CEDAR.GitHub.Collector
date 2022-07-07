@@ -1,4 +1,4 @@
-﻿using Microsoft.CloudMine.Core.Collectors.Authentication;
+using Microsoft.CloudMine.Core.Collectors.Authentication;
 using Microsoft.CloudMine.Core.Collectors.Cache;
 using Microsoft.CloudMine.Core.Collectors.Collector;
 using Microsoft.CloudMine.Core.Collectors.IO;
@@ -7,7 +7,6 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -20,7 +19,6 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
     {
         private readonly CollectorBase<GitHubCollectionNode> collector;
         private readonly ICache<PointCollectorTableEntity> cache;
-
         public PointCollector(IAuthentication authentication,
                               List<IRecordWriter> recordWriters,
                               GitHubHttpClient httpClient,
@@ -81,6 +79,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 
         public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
         {
+            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(input.Url);
             tableEntity = await pointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
             Dictionary<string, string> properties;
@@ -102,8 +101,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
                 {"Skipped", "False" },
             };
             telemetryClient.TrackEvent("GitHubPointCollectorCache", properties);
-            CloudQueue pointCloudQueue = await AzureHelpers.GetStorageQueueAsync("pointcollector").ConfigureAwait(false);
-            IQueue pointQueue = new CloudQueueWrapper(pointCloudQueue);
+            IQueue pointQueue = new CloudQueueMsiWrapper("pointcollector", storageAccountNameEnvironmentVariable, telemetryClient);
             await pointQueue.PutObjectAsJsonStringAsync(input).ConfigureAwait(false);
             PointCollectorTableEntity collectionRecord = new PointCollectorTableEntity(input.Url);
             await pointCollectorCache.CacheAsync(collectionRecord).ConfigureAwait(false);
