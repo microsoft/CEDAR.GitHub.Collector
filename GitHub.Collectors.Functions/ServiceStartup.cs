@@ -25,7 +25,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             // Write startupcode here.            
             string settings = null;
             string settingsPath = Environment.GetEnvironmentVariable("SettingsPath");
-            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
+            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(settingsPath))
             {
                 settingsPath = "Settings.json";

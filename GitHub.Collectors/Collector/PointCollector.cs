@@ -7,7 +7,6 @@ using Microsoft.CloudMine.Core.Collectors.Web;
 using Microsoft.CloudMine.GitHub.Collectors.Cache;
 using Microsoft.CloudMine.GitHub.Collectors.Model;
 using Microsoft.CloudMine.GitHub.Collectors.Web;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -80,7 +79,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Collector
 
         public static async Task OffloadToPointCollector(PointCollectorInput input, ICache<PointCollectorTableEntity> pointCollectorCache, ITelemetryClient telemetryClient)
         {
-            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
+            string storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
             PointCollectorTableEntity tableEntity = new PointCollectorTableEntity(input.Url);
             tableEntity = await pointCollectorCache.RetrieveAsync(tableEntity).ConfigureAwait(false);
             Dictionary<string, string> properties;

@@ -19,14 +19,13 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
         private readonly ITelemetryClient telemetryClient;
         private readonly string storageAccountNameEnvironmentVariable;
         private CloudTable table;
-        private CloudQueue queue;
         private bool initialized;
 
         public EventsBookkeeper(ITelemetryClient telemetryClient)
         {
             this.telemetryClient = telemetryClient;
             this.initialized = false;
-            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
+            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
         }
 
         public async Task InitializeAsync()

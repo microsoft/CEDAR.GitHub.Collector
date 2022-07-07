@@ -62,7 +62,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             this.configManager = configManager;
             this.configManager.SetTelemetryClient(this.telemetryClient);
             this.ifxLogger = auditLogger;
-            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable("StorageAccountName");
+            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
             if (this.adlsClient.AdlsClient == null)
             {
                 Dictionary<string, string> properties = new Dictionary<string, string>()
