@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using Microsoft.CloudMine.Core.Collectors.IO;
@@ -17,15 +17,15 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
     public class EventsBookkeeper : IEventsBookkeeper
     {
         private readonly ITelemetryClient telemetryClient;
-
+        private readonly string storageAccountNameEnvironmentVariable;
         private CloudTable table;
-        private CloudQueue queue;
         private bool initialized;
 
         public EventsBookkeeper(ITelemetryClient telemetryClient)
         {
             this.telemetryClient = telemetryClient;
             this.initialized = false;
+            this.storageAccountNameEnvironmentVariable = Environment.GetEnvironmentVariable(Utility.Constants.StorageAccountEnvironmentVariable);
         }
 
         public async Task InitializeAsync()
@@ -36,15 +36,19 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Cache
             }
 
             this.table = await AzureHelpers.GetStorageTableAsync("eventstats").ConfigureAwait(false);
-            this.queue = await AzureHelpers.GetStorageQueueAsync("eventstats").ConfigureAwait(false);
-
             this.initialized = true;
         }
 
         public Task SignalCountAsync(Repository eventStats)
         {
             string message = JsonConvert.SerializeObject(eventStats, Formatting.None);
-            return this.queue.AddMessageAsync(new CloudQueueMessage(message));
+            return AddQueueMessageAsync(message);
+        }
+
+        private async Task AddQueueMessageAsync(string message)
+        {
+            IQueue eventStatsMsiWrapper = new CloudQueueMsiWrapper("eventstats", storageAccountNameEnvironmentVariable, telemetryClient);
+            await eventStatsMsiWrapper.PutMessageAsync(message).ConfigureAwait(false);
         }
 
         public Task ResetCountAsync(Repository repository)
