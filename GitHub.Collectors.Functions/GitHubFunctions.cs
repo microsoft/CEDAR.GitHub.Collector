@@ -42,7 +42,8 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 {
     public class GitHubFunctions
     {
-        private readonly static TimeSpan StatsTrackerRefreshFrequency = TimeSpan.FromSeconds(10);
+        private static readonly string FunctionInvocationTraceName = "FunctionInvocation";
+        private static readonly TimeSpan StatsTrackerRefreshFrequency = TimeSpan.FromSeconds(10);
 
         public readonly string apiDomain;
         private readonly TelemetryClient telemetryClient;
@@ -848,12 +849,12 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         {
             using Activity SessionActivity = GetInvocationActivity(executionContext, timerInfo).Start();
             // Todo : add monitoring info to heartbeat (poison queue checks, failed session invocation IDs)
-            OpenTelemetryMetric.HeartbeatCounter.Add(1);
+            new TelemetryMetric<long>("HeartbeatCounter").Add(1);
         }
 
         private Activity GetInvocationActivity(ExecutionContext context, string queueItem, int dequeueCount)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
+            Activity trace = OpenTelemetryTracer.GetActivity(FunctionInvocationTraceName);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.FunctionName);
             trace.AddTag("DequeueCount", dequeueCount);
@@ -863,7 +864,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
         private Activity GetInvocationActivity(ExecutionContext context, TimerInfo timerInfo)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
+            Activity trace = OpenTelemetryTracer.GetActivity(FunctionInvocationTraceName);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.FunctionName);
             trace.AddTag("IsPastDue", timerInfo.IsPastDue);
@@ -872,7 +873,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
 
         private Activity GetInvocationActivity(OrchestrationContext context)
         {
-            Activity trace = OpenTelemetryTracer.GetActivity(OpenTelemetryTrace.FunctionInvocation);
+            Activity trace = OpenTelemetryTracer.GetActivity(FunctionInvocationTraceName);
             trace.AddTag("InvocationId", context.InvocationId.ToString());
             trace.AddTag("FunctionName", context.CollectorType);
             return trace;
