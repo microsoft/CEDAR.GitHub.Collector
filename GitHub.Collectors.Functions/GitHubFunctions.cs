@@ -44,6 +44,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
     {
         private static readonly string FunctionInvocationTraceName = "FunctionInvocation";
         private static readonly TimeSpan StatsTrackerRefreshFrequency = TimeSpan.FromSeconds(10);
+        private static readonly TelemetryMetric<long> HeartbeatMetric = new TelemetryMetric<long>("HeartbeatCounter");
 
         public readonly string apiDomain;
         private readonly TelemetryClient telemetryClient;
@@ -849,7 +850,7 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
         {
             using Activity SessionActivity = GetInvocationActivity(executionContext, timerInfo).Start();
             // Todo : add monitoring info to heartbeat (poison queue checks, failed session invocation IDs)
-            new TelemetryMetric<long>("HeartbeatCounter").Add(1);
+            HeartbeatMetric.Add(1);
         }
 
         private Activity GetInvocationActivity(ExecutionContext context, string queueItem, int dequeueCount)
