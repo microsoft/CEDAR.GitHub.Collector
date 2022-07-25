@@ -102,11 +102,11 @@ namespace Microsoft.CloudMine.GitHub.Collectors.Functions
             }
             string eventType = eventTypeValues.First();
 
-            // Temporarily ignore processing secret_scanning_alert events since our collectors are failing because of the load.
-            // Temporarily ignore processing security_advisory events since they never contain required organization name.
             HashSet<string> ignoreEvents = new HashSet<string>()
             {
+                // Temporarily ignore processing secret_scanning_alert events since our collectors are failing because of the load.
                 "secret_scanning_alert",
+                // Temporarily ignore processing security_advisory events since they never contain required organization name.
                 "security_advisory"
             };
 
